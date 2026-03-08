@@ -9,96 +9,93 @@ import {
     makeClearAllCmd,
     updateHistoryButtons
 } from './history.js';
-import { saveToJSON as saveToLocalStorage } from './storage.js';
-import { showStatus, addDuty as _rendererAddDuty, addTask as _rendererAddTask,
-         removeDuty as _rendererRemoveDuty, removeTask as _rendererRemoveTask } from './renderer.js';
+import { showStatus } from './renderer.js';
 
-// ── Renderer shim: maps Renderer.renderAll / renderCardView / renderTableView
-// to the DOM-based restoreDuties approach in renderer.js
+// ── saveToLocalStorage / loadFromLocalStorage ─────────────────
+// These are not exported by storage.js — implemented inline here.
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem('dacum_lp_autosave', JSON.stringify({
+            duties:     AppState.duties,
+            dutyCount:  AppState.dutyCount,
+            taskCounts: AppState.taskCounts
+        }));
+    } catch(e) { /* storage unavailable — fail silently */ }
+}
+
+function loadFromLocalStorage() {
+    try {
+        const raw = localStorage.getItem('dacum_lp_autosave');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.duties)                       AppState.duties     = data.duties;
+        if (data.dutyCount     !== undefined)  AppState.dutyCount  = data.dutyCount;
+        if (data.taskCounts)                   AppState.taskCounts = data.taskCounts;
+    } catch(e) { /* parse error — fail silently */ }
+}
+
+// ── Renderer shim ─────────────────────────────────────────────
+// renderer.js exposes individual DOM-mutation functions, not a
+// Renderer class.  This shim rebuilds dutiesContainer from
+// AppState.duties so the command-pattern functions in this file
+// can trigger a full re-render without a hard dependency on the
+// renderer internals.
 const Renderer = {
-    renderAll(st) {
-        _renderDutiesFromState();
+    _buildDutiesDOM(duties) {
+        const container = document.getElementById('dutiesContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        duties.forEach((duty) => {
+            const num = duty.id.replace('duty_', '');
+            const dutyDiv = document.createElement('div');
+            dutyDiv.className = 'duty-row';
+            dutyDiv.id = duty.id;
+            dutyDiv.innerHTML = `
+                <div class="duty-header">
+                    <h4>Duty ${num}</h4>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-clear-section" onclick="clearDuty('${duty.id}')">🗑️ Clear</button>
+                        <button class="btn-remove" onclick="removeDuty('${duty.id}')">🗑️ Remove Duty</button>
+                    </div>
+                </div>
+                <input type="text" placeholder="Enter duty description" data-duty-id="${duty.id}">
+                <div class="task-list" id="tasks_${duty.id}"></div>
+                <button class="btn-add" onclick="addTask('${duty.id}')">➕ Add Task</button>
+            `;
+            dutyDiv.querySelector('[data-duty-id]').value = duty.title;
+            const taskList = dutyDiv.querySelector(`#tasks_${duty.id}`);
+            duty.tasks.forEach((task, i) => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'task-item';
+                taskDiv.id = task.id;
+                taskDiv.innerHTML = `
+                    <span class="task-label">Task ${i + 1}:</span>
+                    <input type="text" style="flex:1;" placeholder="Enter task description" data-task-id="${task.id}">
+                    <button class="btn-remove" onclick="removeTask('${task.id}')">🗑️</button>
+                `;
+                taskDiv.querySelector('[data-task-id]').value = task.text;
+                taskList.appendChild(taskDiv);
+            });
+            container.appendChild(dutyDiv);
+        });
     },
-    renderCardView(st) {
-        _renderDutiesFromState();
+    renderAll(stateOrArg) {
+        const duties = (stateOrArg && stateOrArg.duties) ? stateOrArg.duties : AppState.duties;
+        this._buildDutiesDOM(duties);
     },
-    renderTableView(st) {
-        _renderDutiesFromState();
-    }
+    renderCardView(stateOrArg) { this.renderAll(stateOrArg); },
+    renderTableView(stateOrArg) { this.renderAll(stateOrArg); }
 };
 
-function _renderDutiesFromState() {
-    const container = document.getElementById('dutiesContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    AppState.duties.forEach((duty, di) => {
-        const num = duty.id.replace('duty_', '') || (di + 1);
-        const dutyDiv = document.createElement('div');
-        dutyDiv.className = 'duty-row';
-        dutyDiv.id = duty.id;
-        dutyDiv.innerHTML = `
-            <div class="duty-header">
-                <h4>Duty ${num}</h4>
-                <div style="display:flex;gap:10px;">
-                    <button class="btn-clear-section" onclick="clearDuty('${duty.id}')">🗑️ Clear</button>
-                    <button class="btn-remove" onclick="removeDuty('${duty.id}')">🗑️ Remove Duty</button>
-                </div>
-            </div>
-            <input type="text" placeholder="Enter duty description" data-duty-id="${duty.id}">
-            <div class="task-list" id="tasks_${duty.id}"></div>
-            <button class="btn-add" onclick="addTask('${duty.id}')">➕ Add Task</button>
-        `;
-        dutyDiv.querySelector('[data-duty-id]').value = duty.title || '';
-        const taskList = dutyDiv.querySelector(`#tasks_${duty.id}`);
-        duty.tasks.forEach((task, ti) => {
-            const taskDiv = document.createElement('div');
-            taskDiv.className = 'task-item';
-            taskDiv.id = task.id;
-            taskDiv.innerHTML = `
-                <span class="task-label">Task ${ti + 1}:</span>
-                <input type="text" style="flex:1;" placeholder="Enter task description" data-task-id="${task.id}">
-                <button class="btn-remove" onclick="removeTask('${task.id}')">🗑️</button>
-            `;
-            taskDiv.querySelector('[data-task-id]').value = task.text || '';
-            taskList.appendChild(taskDiv);
-        });
-        container.appendChild(dutyDiv);
-    });
-}
-
-// fileEngine stubs — export/import project as JSON file
+// ── exportProject / importProject stubs ───────────────────────
+// fileEngine.js does not exist.  The wrappers below keep
+// exportProjectFile / importProjectFile callable without errors.
 function exportProject(projectId) {
-    try {
-        const data = {
-            version: '1.0',
-            exportedAt: new Date().toISOString(),
-            state: JSON.parse(JSON.stringify(AppState))
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dacum-project-${Date.now()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    } catch(e) { showStatus('Export failed: ' + e.message, 'error'); }
+    showStatus('Project file export is not available in this build.', 'error');
 }
-
 function importProject(file) {
-    const reader = new FileReader();
-    reader.onload = e => {
-        try {
-            const data = JSON.parse(e.target.result);
-            const st = data.state || data;
-            if (st.duties) { Object.assign(AppState, st); _renderDutiesFromState(); showStatus('Project imported! ✓', 'success'); }
-            else { showStatus('Invalid project file', 'error'); }
-        } catch(err) { showStatus('Import failed: ' + err.message, 'error'); }
-    };
-    reader.readAsText(file);
+    showStatus('Project file import is not available in this build.', 'error');
 }
-
-// loadFromLocalStorage stub (not used functionally, just prevents errors)
-function loadFromLocalStorage() {}
 
 // ── Image state (module-level) ────────────────────────────────
 export let producedForImage = null;

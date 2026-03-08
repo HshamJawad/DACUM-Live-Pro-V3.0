@@ -5,13 +5,13 @@ import { state } from './state.js';
 import * as renderer from './renderer.js';
 import * as storage from './storage.js';
 import * as api from './api.js';
-import * as events from './events.js';
+// events.js — import EventBinder so we can call init() below
+import { EventBinder } from './events.js';
 
 // ─── Expose all functions to window for inline onclick="..." handlers ───────
 Object.assign(window, renderer);
 Object.assign(window, storage);
 Object.assign(window, api);
-Object.assign(window, events);
 
 // Expose state for any legacy inline references
 window.state = state;
@@ -23,7 +23,10 @@ window.updateCollectionMode = function() {
     if (_origUpdateCollectionMode) {
         _origUpdateCollectionMode();
     }
-    if (typeof window.lwCheckAndShowSection === 'function') {
-        window.lwCheckAndShowSection();
-    }
+    window.lwCheckAndShowSection();
 };
+
+// ─── Initialise event bindings (tabs, keyboard shortcuts, undo/redo) ─────────
+document.addEventListener('DOMContentLoaded', () => {
+    EventBinder.init();
+});
