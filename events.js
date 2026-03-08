@@ -111,16 +111,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- UNDO/REDO INTEGRATION ---
-// Wire Undo / Redo toolbar buttons and keyboard shortcuts.
+// Wire Undo / Redo toolbar buttons.
+// Uses optional chaining so missing buttons never throw an error.
 document.addEventListener('DOMContentLoaded', function() {
-    const undoBtn = document.getElementById('undoBtn');
-    const redoBtn = document.getElementById('redoBtn');
+    const undoBtn = document.querySelector('#undoBtn, [data-action="undo"]');
+    const redoBtn = document.querySelector('#redoBtn, [data-action="redo"]');
 
-    // Shared helper: apply restored state and refresh UI.
+    // Shared helper: apply restored state and refresh all state-driven UI sections.
     function applyRestoredState(restoredState) {
-        // Mutate in-place so all modules that hold the same reference stay in sync.
         Object.assign(state, restoredState);
-        // Refresh all state-driven UI sections.
         renderSkillsLevel();
         renderModuleLoList();
         renderModules();
@@ -128,38 +127,39 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPCSourceList();
     }
 
-    if (undoBtn) {
-        undoBtn.addEventListener('click', function() {
-            const restoredState = undo(state);
-            applyRestoredState(restoredState);
-        });
-    }
-
-    if (redoBtn) {
-        redoBtn.addEventListener('click', function() {
-            const restoredState = redo(state);
-            applyRestoredState(restoredState);
-        });
-    }
-
-    // Keyboard shortcuts: Ctrl+Z → Undo, Ctrl+Y → Redo.
-    // Ignored when focus is inside an input, textarea, or contenteditable element
-    // so normal text editing is never interrupted.
-    document.addEventListener('keydown', function(event) {
-        const tag = document.activeElement?.tagName?.toLowerCase();
-        const isEditable = document.activeElement?.isContentEditable;
-        if (tag === 'input' || tag === 'textarea' || isEditable) return;
-
-        if (event.ctrlKey && event.key === 'z') {
-            event.preventDefault();
-            const restoredState = undo(state);
-            applyRestoredState(restoredState);
-        } else if (event.ctrlKey && event.key === 'y') {
-            event.preventDefault();
-            const restoredState = redo(state);
-            applyRestoredState(restoredState);
-        }
+    undoBtn?.addEventListener('click', function() {
+        applyRestoredState(undo(state));
     });
+
+    redoBtn?.addEventListener('click', function() {
+        applyRestoredState(redo(state));
+    });
+});
+
+// --- UNDO/REDO KEYBOARD SHORTCUTS ---
+// Ctrl+Z → application Undo, Ctrl+Y → application Redo.
+// event.preventDefault() is called unconditionally so the browser's native undo
+// (which only affects text fields) never runs and cannot conflict with app actions.
+document.addEventListener('keydown', function(event) {
+    if (event.ctrlKey && event.key === 'z') {
+        event.preventDefault();
+        const restoredState = undo(state);
+        Object.assign(state, restoredState);
+        renderSkillsLevel();
+        renderModuleLoList();
+        renderModules();
+        renderLearningOutcomes();
+        renderPCSourceList();
+    } else if (event.ctrlKey && event.key === 'y') {
+        event.preventDefault();
+        const restoredState = redo(state);
+        Object.assign(state, restoredState);
+        renderSkillsLevel();
+        renderModuleLoList();
+        renderModules();
+        renderLearningOutcomes();
+        renderPCSourceList();
+    }
 });
 // --- END UNDO/REDO INTEGRATION ---
 
