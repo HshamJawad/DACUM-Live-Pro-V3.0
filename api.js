@@ -3,7 +3,10 @@
 import { state } from './state.js';
 import { showStatus, showLoadingModal, hideLoadingModal, addDuty, addTask,
          lwApplyVotingResultsToDataModel, lwDisplayResults } from './renderer.js';
-import { checkUsageLimit, incrementUsage } from './storage.js';
+// checkUsageLimit / incrementUsage accessed via window at runtime
+// (storage.js exports them → app.js exposes via Object.assign(window, storage))
+const checkUsageLimit = () => (typeof window.checkUsageLimit === 'function' ? window.checkUsageLimit() : { allowed: true, remaining: 99 });
+const incrementUsage  = () => { if (typeof window.incrementUsage  === 'function') window.incrementUsage(); };
 
 async function generateAIDacum() {
     console.log('🚀 AI Generation Started');
@@ -11,7 +14,7 @@ async function generateAIDacum() {
     // Check usage limit FIRST
     const usageStatus = checkUsageLimit();
     if (!usageStatus.allowed) {
-        showStatus(`❌ Daily limit reached (${DAILY_LIMIT} generations). Try again tomorrow!`, 'error');
+        showStatus(`❌ Daily limit reached. Try again tomorrow!`, 'error');
         return;
     }
     
