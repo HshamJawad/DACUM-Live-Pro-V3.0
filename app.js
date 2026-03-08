@@ -5,10 +5,20 @@ import { state } from './state.js';
 import * as renderer from './renderer.js';
 import * as storage from './storage.js';
 import * as api from './api.js';
-// events.js — import EventBinder so we can call init() below
-import { EventBinder } from './events.js';
+import {
+    EventBinder,
+    addDuty, removeDuty, addTask, removeTask,
+    clearDuty, clearAll, toggleCardView, cvAddDuty,
+    handleImageUpload, removeImage,
+    addCustomSection, removeCustomSection,
+    toggleEditHeading, clearSection,
+    saveToJSON, loadFromJSON,
+    exportToWord, exportToPDF,
+    toggleInfoBox,
+    exportProjectFile, importProjectFile
+} from './events.js';
 
-// ─── Expose all functions to window for inline onclick="..." handlers ───────
+// ─── Expose all renderer / storage / api functions to window ────────────────
 Object.assign(window, renderer);
 Object.assign(window, storage);
 Object.assign(window, api);
@@ -16,13 +26,27 @@ Object.assign(window, api);
 // Expose state for any legacy inline references
 window.state = state;
 
+// ─── Override duty/task functions with command-pattern versions ──────────────
+// renderer.js versions do direct DOM manipulation and don't push to the
+// undo stack.  The events.js versions use the command pattern so undo/redo
+// works correctly.  These assignments MUST come after Object.assign(window,
+// renderer) so they win the race.
+Object.assign(window, {
+    addDuty, removeDuty, addTask, removeTask,
+    clearDuty, clearAll, toggleCardView, cvAddDuty,
+    handleImageUpload, removeImage,
+    addCustomSection, removeCustomSection,
+    toggleEditHeading, clearSection,
+    saveToJSON, loadFromJSON,
+    exportToWord, exportToPDF,
+    toggleInfoBox,
+    exportProjectFile, importProjectFile
+});
+
 // ─── Override updateCollectionMode to include Live Workshop section toggle ───
-// Must run AFTER Object.assign so window.updateCollectionMode is already set.
 const _origUpdateCollectionMode = window.updateCollectionMode;
 window.updateCollectionMode = function() {
-    if (_origUpdateCollectionMode) {
-        _origUpdateCollectionMode();
-    }
+    if (_origUpdateCollectionMode) _origUpdateCollectionMode();
     window.lwCheckAndShowSection();
 };
 

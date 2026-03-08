@@ -1,4 +1,2 @@
-// design-system.js
-// Compatibility shim — re-exports utilities from renderer.js so that
-// any future import of design-system.js does not break the module graph.
+// design-system.js — compatibility shim
 export { showStatus } from './renderer.js';

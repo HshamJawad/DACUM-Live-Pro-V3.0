@@ -12,7 +12,6 @@ import {
 import { showStatus } from './renderer.js';
 
 // ── saveToLocalStorage / loadFromLocalStorage ─────────────────
-// These are not exported by storage.js — implemented inline here.
 function saveToLocalStorage() {
     try {
         localStorage.setItem('dacum_lp_autosave', JSON.stringify({
@@ -20,32 +19,41 @@ function saveToLocalStorage() {
             dutyCount:  AppState.dutyCount,
             taskCounts: AppState.taskCounts
         }));
-    } catch(e) { /* storage unavailable — fail silently */ }
+    } catch(e) {}
 }
-
 function loadFromLocalStorage() {
     try {
         const raw = localStorage.getItem('dacum_lp_autosave');
         if (!raw) return;
         const data = JSON.parse(raw);
-        if (data.duties)                       AppState.duties     = data.duties;
-        if (data.dutyCount     !== undefined)  AppState.dutyCount  = data.dutyCount;
-        if (data.taskCounts)                   AppState.taskCounts = data.taskCounts;
-    } catch(e) { /* parse error — fail silently */ }
+        if (data.duties)              AppState.duties     = data.duties;
+        if (data.dutyCount !== undefined) AppState.dutyCount = data.dutyCount;
+        if (data.taskCounts)          AppState.taskCounts = data.taskCounts;
+    } catch(e) {}
 }
 
 // ── Renderer shim ─────────────────────────────────────────────
-// renderer.js exposes individual DOM-mutation functions, not a
-// Renderer class.  This shim rebuilds dutiesContainer from
-// AppState.duties so the command-pattern functions in this file
-// can trigger a full re-render without a hard dependency on the
-// renderer internals.
+// renderer.js exposes individual DOM functions, not a Renderer class.
+// This shim keeps AppState.duties as source of truth and rebuilds
+// the dutiesContainer DOM from it on every renderAll() call.
+// _syncFromDOM() must be called BEFORE any command that deletes/moves
+// data, so the captured snapshots contain the user's current input text.
 const Renderer = {
-    _buildDutiesDOM(duties) {
+    _syncFromDOM() {
+        AppState.duties.forEach(duty => {
+            const inp = document.querySelector(`[data-duty-id="${duty.id}"]`);
+            if (inp) duty.title = inp.value;
+            duty.tasks.forEach(task => {
+                const tinp = document.querySelector(`[data-task-id="${task.id}"]`);
+                if (tinp) task.text = tinp.value;
+            });
+        });
+    },
+    _buildDOM(duties) {
         const container = document.getElementById('dutiesContainer');
         if (!container) return;
         container.innerHTML = '';
-        duties.forEach((duty) => {
+        duties.forEach(duty => {
             const num = duty.id.replace('duty_', '');
             const dutyDiv = document.createElement('div');
             dutyDiv.className = 'duty-row';
@@ -81,21 +89,15 @@ const Renderer = {
     },
     renderAll(stateOrArg) {
         const duties = (stateOrArg && stateOrArg.duties) ? stateOrArg.duties : AppState.duties;
-        this._buildDutiesDOM(duties);
+        this._buildDOM(duties);
     },
-    renderCardView(stateOrArg) { this.renderAll(stateOrArg); },
-    renderTableView(stateOrArg) { this.renderAll(stateOrArg); }
+    renderCardView(s) { this.renderAll(s); },
+    renderTableView(s) { this.renderAll(s); }
 };
 
 // ── exportProject / importProject stubs ───────────────────────
-// fileEngine.js does not exist.  The wrappers below keep
-// exportProjectFile / importProjectFile callable without errors.
-function exportProject(projectId) {
-    showStatus('Project file export is not available in this build.', 'error');
-}
-function importProject(file) {
-    showStatus('Project file import is not available in this build.', 'error');
-}
+function exportProject() { showStatus('Project file export not available.', 'error'); }
+function importProject() { showStatus('Project file import not available.', 'error'); }
 
 // ── Image state (module-level) ────────────────────────────────
 export let producedForImage = null;
@@ -142,6 +144,7 @@ let customSectionCounter = 0;
 // ══════════════════════════════════════════════════════════════
 
 export function addDuty() {
+    Renderer._syncFromDOM();
     AppState.dutyCount++;
     const dutyId = 'duty_' + AppState.dutyCount;
     AppState.taskCounts[dutyId] = 0;
@@ -153,6 +156,7 @@ export function addDuty() {
 }
 
 export function removeDuty(dutyId) {
+    Renderer._syncFromDOM();
     const cmd = makeDeleteDutyCmd(dutyId);
     cmd.execute();
     pushCommand(cmd);
@@ -160,6 +164,7 @@ export function removeDuty(dutyId) {
 }
 
 export function addTask(dutyId) {
+    Renderer._syncFromDOM();
     AppState.taskCounts[dutyId] = (AppState.taskCounts[dutyId] || 0) + 1;
     const taskId = 'task_' + dutyId + '_' + AppState.taskCounts[dutyId];
     const taskObj = { id: taskId, text: '' };
@@ -170,6 +175,7 @@ export function addTask(dutyId) {
 }
 
 export function removeTask(taskId) {
+    Renderer._syncFromDOM();
     const cmd = makeDeleteTaskCmd(taskId);
     cmd.execute();
     pushCommand(cmd);
@@ -178,6 +184,7 @@ export function removeTask(taskId) {
 
 export function clearDuty(dutyId) {
     if (confirm('Are you sure you want to clear this duty and all its tasks?')) {
+        Renderer._syncFromDOM();
         const duty = AppState.duties.find(d => d.id === dutyId);
         if (duty) {
             duty.title = '';
