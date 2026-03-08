@@ -726,7 +726,7 @@ function updateWorkflowMode() {
 
 // Update workshop participant count
 function updateParticipantCount() {
-    const input = document.getElementById('state.workshopParticipants');
+    const input = document.getElementById('workshopParticipants');
     state.workshopParticipants = parseInt(input.value) || 10;
     console.log('Workshop participants updated to:', state.workshopParticipants);
     
@@ -1743,7 +1743,7 @@ function toggleDutyLevelSummary() {
 
 // Update training load method
 function updateTrainingLoadMethod() {
-    const advanced = document.querySelector('input[name="state.trainingLoadMethod"][value="advanced"]');
+    const advanced = document.querySelector('input[name="trainingLoadMethod"][value="advanced"]');
     state.trainingLoadMethod = advanced.checked ? 'advanced' : 'simple';
     
     // Update label
@@ -2102,7 +2102,7 @@ function clearAll() {
         state.workshopCounts = {};
         state.workshopResults = {};
         state.priorityFormula = 'if';
-        document.getElementById('state.workshopParticipants').value = 10;
+        document.getElementById('workshopParticipants').value = 10;
         document.getElementById('formula-if').checked = true;
         document.getElementById('formula-ifd').checked = false;
         
@@ -6552,8 +6552,8 @@ function lwExportJSON() {
             jobTitle: state.lwFinalizedData.jobTitle,
             sector: document.getElementById('sector')?.value || '',
             context: document.getElementById('context')?.value || '',
-            state.producedForImage: null,
-            state.producedByImage: null
+            producedForImage: null,
+            producedByImage: null
         },
         duties: [],
         additionalInfo: {
@@ -6576,15 +6576,15 @@ function lwExportJSON() {
         },
         customSections: [],
         verification: {
-            state.collectionMode: 'workshop',
-            state.workflowMode: 'standard',
+            collectionMode: 'workshop',
+            workflowMode: 'standard',
             ratings: {},
-            state.taskMetadata: {},
-            state.workshopParticipants: state.lwAggregatedResults.totalVotes,
-            state.priorityFormula: state.lwFinalizedData.priorityFormula || 'if',
-            state.trainingLoadMethod: 'advanced',
-            state.workshopCounts: {},
-            state.workshopResults: {}
+            taskMetadata: {},
+            workshopParticipants: state.lwAggregatedResults.totalVotes,
+            priorityFormula: state.lwFinalizedData.priorityFormula || 'if',
+            trainingLoadMethod: 'advanced',
+            workshopCounts: {},
+            workshopResults: {}
         }
     };
     
@@ -6689,8 +6689,8 @@ function lwExportSnapshot() {
             jobTitle: state.lwFinalizedData.jobTitle,
             sector: document.getElementById('sector')?.value || '',
             context: document.getElementById('context')?.value || '',
-            state.producedForImage: null,
-            state.producedByImage: null
+            producedForImage: null,
+            producedByImage: null
         },
         duties: [],
         additionalInfo: {

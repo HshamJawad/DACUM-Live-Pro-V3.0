@@ -92,8 +92,8 @@ function saveToJSON() {
                 jobTitle: document.getElementById('jobTitle').value,
                 sector: document.getElementById('sector').value,
                 context: document.getElementById('context').value,
-                state.producedForImage: state.producedForImage,
-                state.producedByImage: state.producedByImage,
+                producedForImage: state.producedForImage,
+                producedByImage: state.producedByImage,
                 facilitators: (document.getElementById('facilitators')?.value || '').split('\n').map(s => s.trim()).filter(s => s),
                 observers: (document.getElementById('observers')?.value || '').split('\n').map(s => s.trim()).filter(s => s),
                 panelMembers: (document.getElementById('panelMembers')?.value || '').split('\n').map(s => s.trim()).filter(s => s)
@@ -157,16 +157,16 @@ function saveToJSON() {
 
         // Collect verification ratings (includes workflow mode and workshop data)
         data.verification = {
-            state.collectionMode: state.collectionMode,
-            state.workflowMode: state.workflowMode,
+            collectionMode: state.collectionMode,
+            workflowMode: state.workflowMode,
             ratings: state.verificationRatings,
-            state.taskMetadata: state.taskMetadata,
+            taskMetadata: state.taskMetadata,
             // Workshop-specific data
-            state.workshopParticipants: state.workshopParticipants,
-            state.priorityFormula: state.priorityFormula,
-            state.trainingLoadMethod: state.trainingLoadMethod,
-            state.workshopCounts: state.workshopCounts,
-            state.workshopResults: state.workshopResults
+            workshopParticipants: state.workshopParticipants,
+            priorityFormula: state.priorityFormula,
+            trainingLoadMethod: state.trainingLoadMethod,
+            workshopCounts: state.workshopCounts,
+            workshopResults: state.workshopResults
         };
         
         // Collect competency clusters
@@ -406,15 +406,15 @@ function loadFromJSON(event) {
                     }
                     
                     console.log('Loaded verification data:', {
-                        state.collectionMode: state.collectionMode,
-                        state.workflowMode: state.workflowMode,
+                        collectionMode: state.collectionMode,
+                        workflowMode: state.workflowMode,
                         ratingsCount: Object.keys(state.verificationRatings).length
                     });
                     
                     // Load workshop-specific data (backward compatible)
                     if (data.verification.workshopParticipants) {
                         state.workshopParticipants = data.verification.workshopParticipants;
-                        document.getElementById('state.workshopParticipants').value = state.workshopParticipants;
+                        document.getElementById('workshopParticipants').value = state.workshopParticipants;
                     }
                     
                     if (data.verification.priorityFormula) {
@@ -428,8 +428,8 @@ function loadFromJSON(event) {
                     
                     if (data.verification.trainingLoadMethod) {
                         state.trainingLoadMethod = data.verification.trainingLoadMethod;
-                        const radioAdvanced = document.querySelector('input[name="state.trainingLoadMethod"][value="advanced"]');
-                        const radioSimple = document.querySelector('input[name="state.trainingLoadMethod"][value="simple"]');
+                        const radioAdvanced = document.querySelector('input[name="trainingLoadMethod"][value="advanced"]');
+                        const radioSimple = document.querySelector('input[name="trainingLoadMethod"][value="simple"]');
                         if (state.trainingLoadMethod === 'advanced' && radioAdvanced) {
                             radioAdvanced.checked = true;
                         } else if (state.trainingLoadMethod === 'simple' && radioSimple) {

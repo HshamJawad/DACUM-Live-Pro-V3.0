@@ -276,13 +276,13 @@ async function lwFinalizeAndCreateSession() {
     if (!valid) return;
     
     // Capture the selected priority formula
-    const selectedFormula = document.querySelector('input[name="state.priorityFormula"]:checked')?.value || 'if';
+    const selectedFormula = document.querySelector('input[name="priorityFormula"]:checked')?.value || 'if';
     
     // Create finalized snapshot
     state.lwFinalizedData = {
         occupation: occupation,
         jobTitle: jobTitle,
-        state.priorityFormula: selectedFormula,
+        priorityFormula: selectedFormula,
         duties: JSON.parse(JSON.stringify(duties)) // Deep copy
     };
     
@@ -324,7 +324,7 @@ async function lwFinalizeAndCreateSession() {
             // Show session info
             document.getElementById('lwStep1-finalize').style.display = 'none';
             document.getElementById('lwStep2-session').style.display = 'block';
-            document.getElementById('state.lwSessionId').textContent = state.lwSessionId;
+            document.getElementById('lwSessionId').textContent = state.lwSessionId;
             
             // Generate participant link to separate participant file
             // Get directory path without filename
