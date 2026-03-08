@@ -9,10 +9,96 @@ import {
     makeClearAllCmd,
     updateHistoryButtons
 } from './history.js';
-import { saveToLocalStorage, loadFromLocalStorage } from './storage.js';
-import { Renderer } from './renderer.js';
-import { showStatus } from './design-system.js';
-import { exportProject, importProject } from './fileEngine.js';
+import { saveToJSON as saveToLocalStorage } from './storage.js';
+import { showStatus, addDuty as _rendererAddDuty, addTask as _rendererAddTask,
+         removeDuty as _rendererRemoveDuty, removeTask as _rendererRemoveTask } from './renderer.js';
+
+// ── Renderer shim: maps Renderer.renderAll / renderCardView / renderTableView
+// to the DOM-based restoreDuties approach in renderer.js
+const Renderer = {
+    renderAll(st) {
+        _renderDutiesFromState();
+    },
+    renderCardView(st) {
+        _renderDutiesFromState();
+    },
+    renderTableView(st) {
+        _renderDutiesFromState();
+    }
+};
+
+function _renderDutiesFromState() {
+    const container = document.getElementById('dutiesContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    AppState.duties.forEach((duty, di) => {
+        const num = duty.id.replace('duty_', '') || (di + 1);
+        const dutyDiv = document.createElement('div');
+        dutyDiv.className = 'duty-row';
+        dutyDiv.id = duty.id;
+        dutyDiv.innerHTML = `
+            <div class="duty-header">
+                <h4>Duty ${num}</h4>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn-clear-section" onclick="clearDuty('${duty.id}')">🗑️ Clear</button>
+                    <button class="btn-remove" onclick="removeDuty('${duty.id}')">🗑️ Remove Duty</button>
+                </div>
+            </div>
+            <input type="text" placeholder="Enter duty description" data-duty-id="${duty.id}">
+            <div class="task-list" id="tasks_${duty.id}"></div>
+            <button class="btn-add" onclick="addTask('${duty.id}')">➕ Add Task</button>
+        `;
+        dutyDiv.querySelector('[data-duty-id]').value = duty.title || '';
+        const taskList = dutyDiv.querySelector(`#tasks_${duty.id}`);
+        duty.tasks.forEach((task, ti) => {
+            const taskDiv = document.createElement('div');
+            taskDiv.className = 'task-item';
+            taskDiv.id = task.id;
+            taskDiv.innerHTML = `
+                <span class="task-label">Task ${ti + 1}:</span>
+                <input type="text" style="flex:1;" placeholder="Enter task description" data-task-id="${task.id}">
+                <button class="btn-remove" onclick="removeTask('${task.id}')">🗑️</button>
+            `;
+            taskDiv.querySelector('[data-task-id]').value = task.text || '';
+            taskList.appendChild(taskDiv);
+        });
+        container.appendChild(dutyDiv);
+    });
+}
+
+// fileEngine stubs — export/import project as JSON file
+function exportProject(projectId) {
+    try {
+        const data = {
+            version: '1.0',
+            exportedAt: new Date().toISOString(),
+            state: JSON.parse(JSON.stringify(AppState))
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dacum-project-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch(e) { showStatus('Export failed: ' + e.message, 'error'); }
+}
+
+function importProject(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            const st = data.state || data;
+            if (st.duties) { Object.assign(AppState, st); _renderDutiesFromState(); showStatus('Project imported! ✓', 'success'); }
+            else { showStatus('Invalid project file', 'error'); }
+        } catch(err) { showStatus('Import failed: ' + err.message, 'error'); }
+    };
+    reader.readAsText(file);
+}
+
+// loadFromLocalStorage stub (not used functionally, just prevents errors)
+function loadFromLocalStorage() {}
 
 // ── Image state (module-level) ────────────────────────────────
 export let producedForImage = null;
