@@ -486,7 +486,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
 function addDuty() {
-    pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
     state.dutyCount++;
     const dutyDiv = document.createElement('div');
     dutyDiv.className = 'duty-row';
@@ -507,14 +507,14 @@ function addDuty() {
 }
 
 function removeDuty(dutyId) {
-    pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
     document.getElementById(dutyId).remove();
 }
 
 // state.taskCounts initialized in state.js
 
 function addTask(dutyId) {
-    pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
     if (!state.taskCounts[dutyId]) state.taskCounts[dutyId] = 0;
     state.taskCounts[dutyId]++;
     
@@ -530,7 +530,7 @@ function addTask(dutyId) {
 }
 
 function removeTask(taskId) {
-    pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
     document.getElementById(taskId).remove();
 }
 
@@ -611,7 +611,7 @@ function formatList(inputId, formatType) {
 // Clear specific duty section
 function clearDuty(dutyId) {
     if (confirm('Are you sure you want to clear this duty and all its tasks?')) {
-        pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+        snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
         // Clear duty input
         const dutyInput = document.querySelector(`[data-duty-id="${dutyId}"]`);
         if (dutyInput) {
@@ -2021,6 +2021,68 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// --- UNDO/REDO INTEGRATION ---
+// Capture the current duties/tasks DOM (including typed input values) into state.dutiesSnapshot.
+// Must be called BEFORE any mutation so the snapshot reflects the pre-change state.
+function snapshotDuties() {
+    const container = document.getElementById('dutiesContainer');
+    if (!container) { state.dutiesSnapshot = []; return; }
+    state.dutiesSnapshot = Array.from(container.querySelectorAll('.duty-row')).map(row => {
+        const dutyInput = row.querySelector('[data-duty-id]');
+        return {
+            id: row.id,
+            value: dutyInput ? dutyInput.value : '',
+            tasks: Array.from(row.querySelectorAll('[data-task-id]')).map(t => ({
+                id: t.getAttribute('data-task-id'),
+                value: t.value
+            }))
+        };
+    });
+}
+
+// Rebuild the duties/tasks DOM from state.dutiesSnapshot.
+// Called after undo/redo to restore the visual state.
+function restoreDuties() {
+    const container = document.getElementById('dutiesContainer');
+    if (!container || !state.dutiesSnapshot) return;
+    container.innerHTML = '';
+    state.dutiesSnapshot.forEach(duty => {
+        const num = duty.id.replace('duty_', '');
+        const dutyDiv = document.createElement('div');
+        dutyDiv.className = 'duty-row';
+        dutyDiv.id = duty.id;
+        dutyDiv.innerHTML = `
+            <div class="duty-header">
+                <h4>Duty ${num}</h4>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-clear-section" onclick="clearDuty('${duty.id}')">🗑️ Clear</button>
+                    <button class="btn-remove" onclick="removeDuty('${duty.id}')">🗑️ Remove Duty</button>
+                </div>
+            </div>
+            <input type="text" placeholder="Enter duty description" data-duty-id="${duty.id}">
+            <div class="task-list" id="tasks_${duty.id}"></div>
+            <button class="btn-add" onclick="addTask('${duty.id}')">➕ Add Task</button>
+        `;
+        // Set input value after creation to safely handle all characters
+        dutyDiv.querySelector('[data-duty-id]').value = duty.value;
+        const taskList = dutyDiv.querySelector(`#tasks_${duty.id}`);
+        duty.tasks.forEach((task, i) => {
+            const taskDiv = document.createElement('div');
+            taskDiv.className = 'task-item';
+            taskDiv.id = `task_${task.id}`;
+            taskDiv.innerHTML = `
+                <span class="task-label">Task ${i + 1}:</span>
+                <input type="text" style="flex: 1;" placeholder="Enter task description" data-task-id="${task.id}">
+                <button class="btn-remove" onclick="removeTask('task_${task.id}')">🗑️</button>
+            `;
+            taskDiv.querySelector('[data-task-id]').value = task.value;
+            taskList.appendChild(taskDiv);
+        });
+        container.appendChild(dutyDiv);
+    });
+}
+// --- END UNDO/REDO INTEGRATION ---
 
 // Initialize verification tab when switching to it
 // This will be called automatically when tab is opened
@@ -8110,7 +8172,7 @@ export {
     handleImageUpload, removeImage, addCustomSection, removeCustomSection,
     // Duties / tasks
     addDuty, removeDuty, addTask, removeTask, toggleEditHeading, clearSection,
-    formatList, clearDuty,
+    formatList, clearDuty, restoreDuties,
     // Verification & workshop
     updateCollectionMode, updateWorkflowMode, updateParticipantCount,
     updatePriorityFormula, updateTVExportMode, loadDutiesForVerification,

@@ -5,7 +5,8 @@ import { renderSkillsLevel, updateUsageBadge, addDuty, addTask,
          loadDutiesForVerification, initializeClusteringFromTasks,
          renderPCSourceList, renderLearningOutcomes,
          renderModuleLoList, renderModules, exportToPDF,
-         updateCollectionMode, updateWorkflowMode } from './renderer.js';
+         updateCollectionMode, updateWorkflowMode,
+         restoreDuties } from './renderer.js';
 // --- UNDO/REDO INTEGRATION ---
 import { undo, redo } from './history.js';
 // --- END UNDO/REDO INTEGRATION ---
@@ -111,54 +112,46 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- UNDO/REDO INTEGRATION ---
-// Wire Undo / Redo toolbar buttons.
-// Uses optional chaining so missing buttons never throw an error.
+// Shared helper: apply restored state + rebuild all affected UI sections.
+function applyUndo() {
+    const prev = undo(state);
+    Object.assign(state, prev);
+    restoreDuties();       // rebuild duties/tasks DOM from state.dutiesSnapshot
+    renderSkillsLevel();
+    renderModuleLoList();
+    renderModules();
+    renderLearningOutcomes();
+    renderPCSourceList();
+}
+
+function applyRedo() {
+    const next = redo(state);
+    Object.assign(state, next);
+    restoreDuties();
+    renderSkillsLevel();
+    renderModuleLoList();
+    renderModules();
+    renderLearningOutcomes();
+    renderPCSourceList();
+}
+
+// Wire toolbar buttons (safe if buttons don't exist yet)
 document.addEventListener('DOMContentLoaded', function() {
-    const undoBtn = document.querySelector('#undoBtn, [data-action="undo"]');
-    const redoBtn = document.querySelector('#redoBtn, [data-action="redo"]');
-
-    // Shared helper: apply restored state and refresh all state-driven UI sections.
-    function applyRestoredState(restoredState) {
-        Object.assign(state, restoredState);
-        renderSkillsLevel();
-        renderModuleLoList();
-        renderModules();
-        renderLearningOutcomes();
-        renderPCSourceList();
-    }
-
-    undoBtn?.addEventListener('click', function() {
-        applyRestoredState(undo(state));
-    });
-
-    redoBtn?.addEventListener('click', function() {
-        applyRestoredState(redo(state));
-    });
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    if (undoBtn) undoBtn.addEventListener('click', applyUndo);
+    if (redoBtn) redoBtn.addEventListener('click', applyRedo);
 });
 
-// --- UNDO/REDO KEYBOARD SHORTCUTS ---
-// Ctrl+Z → application Undo, Ctrl+Y → application Redo.
-// event.preventDefault() is called unconditionally so the browser's native undo
-// (which only affects text fields) never runs and cannot conflict with app actions.
+// Keyboard shortcuts: Ctrl+Z → Undo, Ctrl+Y → Redo.
+// preventDefault() fires unconditionally so the browser's native undo never runs.
 document.addEventListener('keydown', function(event) {
     if (event.ctrlKey && event.key === 'z') {
         event.preventDefault();
-        const restoredState = undo(state);
-        Object.assign(state, restoredState);
-        renderSkillsLevel();
-        renderModuleLoList();
-        renderModules();
-        renderLearningOutcomes();
-        renderPCSourceList();
+        applyUndo();
     } else if (event.ctrlKey && event.key === 'y') {
         event.preventDefault();
-        const restoredState = redo(state);
-        Object.assign(state, restoredState);
-        renderSkillsLevel();
-        renderModuleLoList();
-        renderModules();
-        renderLearningOutcomes();
-        renderPCSourceList();
+        applyRedo();
     }
 });
 // --- END UNDO/REDO INTEGRATION ---
