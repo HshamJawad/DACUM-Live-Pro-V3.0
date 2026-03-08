@@ -92,9 +92,7 @@ export const state = {
             { id: "9.2", text: "", levels: { craftsman: false, skilled: false, semiSkilled: false, foundation: false } }
         ]
     }
-];
-
-// Toggle Skills Level section,
+],
 
     // Duty / task counters (used by addDuty / addTask)
     dutyCount: 0,
