@@ -474,24 +474,30 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// ── History guard — disabled during page init so duty_1/task_1 are not undoable ──
+let _historyEnabled = false;
+
 // Initialize: Add one duty with one task on page load
 window.addEventListener('DOMContentLoaded', function() {
+    _historyEnabled = false;
     addDuty();
     const currentDutyId = `duty_${state.dutyCount}`;
     addTask(currentDutyId);
+    _historyEnabled = true;
 
     // ── Text-edit undo tracking via event delegation ──────────────
-    // Listens on the container so it works even after restoreDuties().
     let _editBeforeSnap = null;
     const container = document.getElementById('dutiesContainer');
     if (container) {
         container.addEventListener('focusin', function(e) {
+            if (!_historyEnabled) return;
             if (e.target.matches('[data-duty-id], [data-task-id]')) {
                 snapshotDuties();
                 _editBeforeSnap = JSON.parse(JSON.stringify(state.dutiesSnapshot));
             }
         });
         container.addEventListener('focusout', function(e) {
+            if (!_historyEnabled) return;
             if (e.target.matches('[data-duty-id], [data-task-id]') && _editBeforeSnap !== null) {
                 snapshotDuties();
                 const after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
@@ -537,26 +543,30 @@ function addDuty() {
         <button class="btn-add" onclick="addTask('duty_${state.dutyCount}')">➕ Add Task</button>
     `;
     document.getElementById('dutiesContainer').appendChild(dutyDiv);
-    snapshotDuties();
-    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
-    pushCommand({
-        execute() {},
-        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
-        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
-    });
+    if (_historyEnabled) {
+        snapshotDuties();
+        const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+        pushCommand({
+            execute() {},
+            undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+            redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+        });
+    }
 }
 
 function removeDuty(dutyId) {
     snapshotDuties();
     const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
     document.getElementById(dutyId).remove();
-    snapshotDuties();
-    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
-    pushCommand({
-        execute() {},
-        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
-        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
-    });
+    if (_historyEnabled) {
+        snapshotDuties();
+        const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+        pushCommand({
+            execute() {},
+            undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+            redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+        });
+    }
 }
 
 // state.taskCounts initialized in state.js
@@ -576,26 +586,30 @@ function addTask(dutyId) {
         <button class="btn-remove" onclick="removeTask('task_${dutyId}_${state.taskCounts[dutyId]}')">🗑️</button>
     `;
     document.getElementById(`tasks_${dutyId}`).appendChild(taskDiv);
-    snapshotDuties();
-    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
-    pushCommand({
-        execute() {},
-        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
-        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
-    });
+    if (_historyEnabled) {
+        snapshotDuties();
+        const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+        pushCommand({
+            execute() {},
+            undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+            redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+        });
+    }
 }
 
 function removeTask(taskId) {
     snapshotDuties();
     const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
     document.getElementById(taskId).remove();
-    snapshotDuties();
-    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
-    pushCommand({
-        execute() {},
-        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
-        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
-    });
+    if (_historyEnabled) {
+        snapshotDuties();
+        const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+        pushCommand({
+            execute() {},
+            undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+            redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+        });
+    }
 }
 
 // Toggle heading edit mode
@@ -677,25 +691,19 @@ function clearDuty(dutyId) {
     if (confirm('Are you sure you want to clear this duty and all its tasks?')) {
         snapshotDuties();
         const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
-        // Clear duty input
         const dutyInput = document.querySelector(`[data-duty-id="${dutyId}"]`);
-        if (dutyInput) {
-            dutyInput.value = '';
-        }
-        
-        // Clear all tasks
+        if (dutyInput) dutyInput.value = '';
         const taskInputs = document.querySelectorAll(`[data-task-id^="${dutyId}_"]`);
-        taskInputs.forEach(taskInput => {
-            taskInput.value = '';
-        });
-        
-        snapshotDuties();
-        const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
-        pushCommand({
-            execute() {},
-            undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
-            redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
-        });
+        taskInputs.forEach(taskInput => { taskInput.value = ''; });
+        if (_historyEnabled) {
+            snapshotDuties();
+            const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+            pushCommand({
+                execute() {},
+                undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+                redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+            });
+        }
         showStatus('Duty cleared! ✓', 'success');
     }
 }
