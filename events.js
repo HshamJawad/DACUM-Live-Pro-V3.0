@@ -9,95 +9,10 @@ import {
     makeClearAllCmd,
     updateHistoryButtons
 } from './history.js';
-import { showStatus } from './renderer.js';
-
-// ── saveToLocalStorage / loadFromLocalStorage ─────────────────
-function saveToLocalStorage() {
-    try {
-        localStorage.setItem('dacum_lp_autosave', JSON.stringify({
-            duties:     AppState.duties,
-            dutyCount:  AppState.dutyCount,
-            taskCounts: AppState.taskCounts
-        }));
-    } catch(e) {}
-}
-function loadFromLocalStorage() {
-    try {
-        const raw = localStorage.getItem('dacum_lp_autosave');
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        if (data.duties)              AppState.duties     = data.duties;
-        if (data.dutyCount !== undefined) AppState.dutyCount = data.dutyCount;
-        if (data.taskCounts)          AppState.taskCounts = data.taskCounts;
-    } catch(e) {}
-}
-
-// ── Renderer shim ─────────────────────────────────────────────
-// renderer.js exposes individual DOM functions, not a Renderer class.
-// This shim keeps AppState.duties as source of truth and rebuilds
-// the dutiesContainer DOM from it on every renderAll() call.
-// _syncFromDOM() must be called BEFORE any command that deletes/moves
-// data, so the captured snapshots contain the user's current input text.
-const Renderer = {
-    _syncFromDOM() {
-        AppState.duties.forEach(duty => {
-            const inp = document.querySelector(`[data-duty-id="${duty.id}"]`);
-            if (inp) duty.title = inp.value;
-            duty.tasks.forEach(task => {
-                const tinp = document.querySelector(`[data-task-id="${task.id}"]`);
-                if (tinp) task.text = tinp.value;
-            });
-        });
-    },
-    _buildDOM(duties) {
-        const container = document.getElementById('dutiesContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        duties.forEach(duty => {
-            const num = duty.id.replace('duty_', '');
-            const dutyDiv = document.createElement('div');
-            dutyDiv.className = 'duty-row';
-            dutyDiv.id = duty.id;
-            dutyDiv.innerHTML = `
-                <div class="duty-header">
-                    <h4>Duty ${num}</h4>
-                    <div style="display:flex;gap:10px;">
-                        <button class="btn-clear-section" onclick="clearDuty('${duty.id}')">🗑️ Clear</button>
-                        <button class="btn-remove" onclick="removeDuty('${duty.id}')">🗑️ Remove Duty</button>
-                    </div>
-                </div>
-                <input type="text" placeholder="Enter duty description" data-duty-id="${duty.id}">
-                <div class="task-list" id="tasks_${duty.id}"></div>
-                <button class="btn-add" onclick="addTask('${duty.id}')">➕ Add Task</button>
-            `;
-            dutyDiv.querySelector('[data-duty-id]').value = duty.title;
-            const taskList = dutyDiv.querySelector(`#tasks_${duty.id}`);
-            duty.tasks.forEach((task, i) => {
-                const taskDiv = document.createElement('div');
-                taskDiv.className = 'task-item';
-                taskDiv.id = task.id;
-                taskDiv.innerHTML = `
-                    <span class="task-label">Task ${i + 1}:</span>
-                    <input type="text" style="flex:1;" placeholder="Enter task description" data-task-id="${task.id}">
-                    <button class="btn-remove" onclick="removeTask('${task.id}')">🗑️</button>
-                `;
-                taskDiv.querySelector('[data-task-id]').value = task.text;
-                taskList.appendChild(taskDiv);
-            });
-            container.appendChild(dutyDiv);
-        });
-    },
-    renderAll(stateOrArg) {
-        const duties = (stateOrArg && stateOrArg.duties) ? stateOrArg.duties : AppState.duties;
-        this._buildDOM(duties);
-    },
-    renderCardView(s) { this.renderAll(s); },
-    renderTableView(s) { this.renderAll(s); }
-};
-
-// ── exportProject / importProject stubs ───────────────────────
-function exportProject() { showStatus('Project file export not available.', 'error'); }
-function importProject() { showStatus('Project file import not available.', 'error'); }
+import { saveToLocalStorage, loadFromLocalStorage } from './storage.js';
+import { Renderer } from './renderer.js';
+import { showStatus } from './design-system.js';
+import { exportProject, importProject } from './fileEngine.js';
 
 // ── Image state (module-level) ────────────────────────────────
 export let producedForImage = null;
@@ -144,7 +59,6 @@ let customSectionCounter = 0;
 // ══════════════════════════════════════════════════════════════
 
 export function addDuty() {
-    Renderer._syncFromDOM();
     AppState.dutyCount++;
     const dutyId = 'duty_' + AppState.dutyCount;
     AppState.taskCounts[dutyId] = 0;
@@ -156,7 +70,6 @@ export function addDuty() {
 }
 
 export function removeDuty(dutyId) {
-    Renderer._syncFromDOM();
     const cmd = makeDeleteDutyCmd(dutyId);
     cmd.execute();
     pushCommand(cmd);
@@ -164,7 +77,6 @@ export function removeDuty(dutyId) {
 }
 
 export function addTask(dutyId) {
-    Renderer._syncFromDOM();
     AppState.taskCounts[dutyId] = (AppState.taskCounts[dutyId] || 0) + 1;
     const taskId = 'task_' + dutyId + '_' + AppState.taskCounts[dutyId];
     const taskObj = { id: taskId, text: '' };
@@ -175,7 +87,6 @@ export function addTask(dutyId) {
 }
 
 export function removeTask(taskId) {
-    Renderer._syncFromDOM();
     const cmd = makeDeleteTaskCmd(taskId);
     cmd.execute();
     pushCommand(cmd);
@@ -184,7 +95,6 @@ export function removeTask(taskId) {
 
 export function clearDuty(dutyId) {
     if (confirm('Are you sure you want to clear this duty and all its tasks?')) {
-        Renderer._syncFromDOM();
         const duty = AppState.duties.find(d => d.id === dutyId);
         if (duty) {
             duty.title = '';
@@ -1134,8 +1044,10 @@ export const EventBinder = {
 
         // ── Expose undo/redo to window for HTML onclick= buttons ─
         // index.html buttons use onclick="undo()" / onclick="redo()"
-        window.undo = () => { undo(); Renderer.renderAll(StateManager.state); updateHistoryButtons(); };
-        window.redo = () => { redo(); Renderer.renderAll(StateManager.state); updateHistoryButtons(); };
+        // Note: renderer.js DOMContentLoaded also sets these; whichever runs last wins.
+        // Both call the same history functions so either is correct.
+        window.undo = () => { undo(); updateHistoryButtons(); };
+        window.redo = () => { redo(); updateHistoryButtons(); };
 
         // ── Close snapshot panel on outside click ───────────────
         // #floatingPanel was removed — the trigger is now #debugBtn
@@ -1161,3 +1073,6 @@ export const EventBinder = {
         });
     }
 };
+
+// Auto-initialize event bindings
+document.addEventListener('DOMContentLoaded', () => EventBinder.init());

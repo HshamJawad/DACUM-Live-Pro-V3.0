@@ -3,7 +3,7 @@
 // No external API calls — those live in api.js.
 import { state } from './state.js';
 // --- UNDO/REDO INTEGRATION ---
-import { pushHistory } from './history.js';
+import { pushHistory, pushCommand, StateManager, updateHistoryButtons, undo as _histUndo, redo as _histRedo } from './history.js';
 // --- END UNDO/REDO INTEGRATION ---
 
 function toggleSkillsLevelSection() {
@@ -479,6 +479,38 @@ window.addEventListener('DOMContentLoaded', function() {
     addDuty();
     const currentDutyId = `duty_${state.dutyCount}`;
     addTask(currentDutyId);
+
+    // ── Text-edit undo tracking via event delegation ──────────────
+    // Listens on the container so it works even after restoreDuties().
+    let _editBeforeSnap = null;
+    const container = document.getElementById('dutiesContainer');
+    if (container) {
+        container.addEventListener('focusin', function(e) {
+            if (e.target.matches('[data-duty-id], [data-task-id]')) {
+                snapshotDuties();
+                _editBeforeSnap = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+            }
+        });
+        container.addEventListener('focusout', function(e) {
+            if (e.target.matches('[data-duty-id], [data-task-id]') && _editBeforeSnap !== null) {
+                snapshotDuties();
+                const after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+                if (JSON.stringify(after) !== JSON.stringify(_editBeforeSnap)) {
+                    const before = _editBeforeSnap;
+                    pushCommand({
+                        execute() {},
+                        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(before)); restoreDuties(); updateHistoryButtons(); },
+                        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(after));  restoreDuties(); updateHistoryButtons(); }
+                    });
+                }
+                _editBeforeSnap = null;
+            }
+        });
+    }
+
+    // ── window.undo / window.redo for button onclick handlers ─────
+    window.undo = function() { _histUndo(); updateHistoryButtons(); };
+    window.redo = function() { _histRedo(); updateHistoryButtons(); };
 });
 
 // Duty management
@@ -486,7 +518,8 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
 function addDuty() {
-    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties();
+    const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
     state.dutyCount++;
     const dutyDiv = document.createElement('div');
     dutyDiv.className = 'duty-row';
@@ -504,17 +537,33 @@ function addDuty() {
         <button class="btn-add" onclick="addTask('duty_${state.dutyCount}')">➕ Add Task</button>
     `;
     document.getElementById('dutiesContainer').appendChild(dutyDiv);
+    snapshotDuties();
+    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+    pushCommand({
+        execute() {},
+        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+    });
 }
 
 function removeDuty(dutyId) {
-    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties();
+    const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
     document.getElementById(dutyId).remove();
+    snapshotDuties();
+    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+    pushCommand({
+        execute() {},
+        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+    });
 }
 
 // state.taskCounts initialized in state.js
 
 function addTask(dutyId) {
-    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties();
+    const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
     if (!state.taskCounts[dutyId]) state.taskCounts[dutyId] = 0;
     state.taskCounts[dutyId]++;
     
@@ -527,11 +576,26 @@ function addTask(dutyId) {
         <button class="btn-remove" onclick="removeTask('task_${dutyId}_${state.taskCounts[dutyId]}')">🗑️</button>
     `;
     document.getElementById(`tasks_${dutyId}`).appendChild(taskDiv);
+    snapshotDuties();
+    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+    pushCommand({
+        execute() {},
+        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+    });
 }
 
 function removeTask(taskId) {
-    snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+    snapshotDuties();
+    const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
     document.getElementById(taskId).remove();
+    snapshotDuties();
+    const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+    pushCommand({
+        execute() {},
+        undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+        redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+    });
 }
 
 // Toggle heading edit mode
@@ -611,7 +675,8 @@ function formatList(inputId, formatType) {
 // Clear specific duty section
 function clearDuty(dutyId) {
     if (confirm('Are you sure you want to clear this duty and all its tasks?')) {
-        snapshotDuties(); pushHistory(state); // --- UNDO/REDO INTEGRATION ---
+        snapshotDuties();
+        const _before = JSON.parse(JSON.stringify(state.dutiesSnapshot));
         // Clear duty input
         const dutyInput = document.querySelector(`[data-duty-id="${dutyId}"]`);
         if (dutyInput) {
@@ -624,6 +689,13 @@ function clearDuty(dutyId) {
             taskInput.value = '';
         });
         
+        snapshotDuties();
+        const _after = JSON.parse(JSON.stringify(state.dutiesSnapshot));
+        pushCommand({
+            execute() {},
+            undo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_before)); restoreDuties(); updateHistoryButtons(); },
+            redo() { state.dutiesSnapshot = JSON.parse(JSON.stringify(_after));  restoreDuties(); updateHistoryButtons(); }
+        });
         showStatus('Duty cleared! ✓', 'success');
     }
 }
