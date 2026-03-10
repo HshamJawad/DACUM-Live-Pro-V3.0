@@ -8240,6 +8240,114 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
+// ── Keyboard shortcuts (Ctrl+Z = undo, Ctrl+Y / Ctrl+Shift+Z = redo) ───────
+// Registered at module level so they're always active regardless of whether
+// events.js loads.  When focus is inside a text field the browser's native
+// Ctrl+Z handles the text edit; we only intercept outside text fields.
+document.addEventListener('keydown', function(e) {
+    const el  = document.activeElement;
+    const tag = el ? el.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' ||
+        (el && el.getAttribute('contenteditable') === 'true')) return;
+    if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        _histUndo();
+        updateHistoryButtons();
+    }
+    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+        e.preventDefault();
+        _histRedo();
+        updateHistoryButtons();
+    }
+});
+
+// ── Expose functions globally so inline HTML onclick= handlers work ──────────
+// ES modules run in strict mode and never pollute the global scope automatically,
+// so every function referenced by onclick="…" in the HTML or in innerHTML strings
+// must be explicitly pinned onto window here.
+window.addDuty             = addDuty;
+window.addTask             = addTask;
+window.removeDuty          = removeDuty;
+window.removeTask          = removeTask;
+window.clearDuty           = clearDuty;
+window.clearAll            = clearAll;
+window.clearCurrentTab     = clearCurrentTab;
+window.toggleEditHeading   = toggleEditHeading;
+window.clearSection        = clearSection;
+window.addCustomSection    = addCustomSection;
+window.removeCustomSection = removeCustomSection;
+window.handleImageUpload   = handleImageUpload;
+window.removeImage         = removeImage;
+window.formatList          = formatList;
+window.toggleInfoBox       = toggleInfoBox;   // also set at line 319; harmless duplicate
+window.switchTab           = switchTab;
+// Skills Level
+window.toggleSkillsLevelSection   = toggleSkillsLevelSection;
+window.addSkillsCategory          = addSkillsCategory;
+window.removeSkillsCategory       = removeSkillsCategory;
+window.updateSkillsCategoryName   = updateSkillsCategoryName;
+window.addSkillsCompetency        = addSkillsCompetency;
+window.removeSkillsCompetency     = removeSkillsCompetency;
+window.updateSkillsCompetencyText = updateSkillsCompetencyText;
+window.handleSkillsLevelChange    = handleSkillsLevelChange;
+window.resetSkillsLevel           = resetSkillsLevel;
+// Verification / Workshop
+window.updateCollectionMode        = updateCollectionMode;
+window.updateWorkflowMode          = updateWorkflowMode;
+window.updateParticipantCount      = updateParticipantCount;
+window.updatePriorityFormula       = updatePriorityFormula;
+window.updateTVExportMode          = updateTVExportMode;
+window.loadDutiesForVerification   = loadDutiesForVerification;
+window.updateRating                = updateRating;
+window.updatePerformsTask          = updatePerformsTask;
+window.updateComments              = updateComments;
+window.updateWorkshopCount         = updateWorkshopCount;
+window.validateAndComputeTask      = validateAndComputeTask;
+window.toggleDashboard             = toggleDashboard;
+window.refreshDashboard            = refreshDashboard;
+window.updateTrainingLoadMethod    = updateTrainingLoadMethod;
+window.exportDashboard             = exportDashboard;
+window.exportTaskVerificationWord  = exportTaskVerificationWord;
+window.exportToWord                = exportToWord;
+window.exportTaskVerificationPDF   = exportTaskVerificationPDF;
+window.exportToPDF                 = exportToPDF;
+// Live Workshop
+window.lwCheckAndShowSection       = lwCheckAndShowSection;
+window.lwCopyLink                  = lwCopyLink;
+window.lwShowQRCode                = lwShowQRCode;
+window.lwCloseQRModal              = lwCloseQRModal;
+window.lwDownloadQRPNG             = lwDownloadQRPNG;
+window.lwCloseVoting               = lwCloseVoting;
+window.lwExportJSON                = lwExportJSON;
+window.lwExportCSV                 = lwExportCSV;
+window.lwExportSnapshot            = lwExportSnapshot;
+// Clustering
+window.bypassToClusteringTab               = bypassToClusteringTab;
+window.resetVerificationDecision           = resetVerificationDecision;
+window.proceedToClusteringFromVerification = proceedToClusteringFromVerification;
+window.createCluster                       = createCluster;
+window.renameCluster                       = renameCluster;
+window.deleteCluster                       = deleteCluster;
+window.removeTaskFromCluster               = removeTaskFromCluster;
+window.addTaskToClusterFromDropdown        = addTaskToClusterFromDropdown;
+window.updateClusterRange                  = updateClusterRange;
+window.updateClusterCriteria               = updateClusterCriteria;
+window.handleCriteriaKeydown               = handleCriteriaKeydown;
+// Learning Outcomes
+window.createLearningOutcome  = createLearningOutcome;
+window.toggleEditLO           = toggleEditLO;
+window.saveLOStatement        = saveLOStatement;
+window.deleteLearningOutcome  = deleteLearningOutcome;
+window.reassignPCToLO         = reassignPCToLO;
+window.unassignPCFromLO       = unassignPCFromLO;
+// Module Mapping
+window.createModule              = createModule;
+window.renameModule              = renameModule;
+window.deleteModule              = deleteModule;
+window.removeLoFromModule        = removeLoFromModule;
+window.addLoToModuleFromDropdown = addLoToModuleFromDropdown;
+window.openModuleBuilderFromMapping = openModuleBuilderFromMapping;
+window.exportModuleMappingJSON   = exportModuleMappingJSON;
 
 export {
     // Skills Level

@@ -45,8 +45,8 @@ export function redo() {
 
 /** Enable / disable the toolbar Undo and Redo buttons. */
 export function updateHistoryButtons() {
-    const undoBtn = document.getElementById('undoBtn') || document.getElementById('floatUndoBtn');
-    const redoBtn = document.getElementById('redoBtn') || document.getElementById('floatRedoBtn');
+    const undoBtn = document.getElementById('floatUndoBtn');
+    const redoBtn = document.getElementById('floatRedoBtn');
     if (undoBtn) undoBtn.disabled = StateManager.undoStack.length === 0;
     if (redoBtn) redoBtn.disabled = StateManager.redoStack.length === 0;
 }

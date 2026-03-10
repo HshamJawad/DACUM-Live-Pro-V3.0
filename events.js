@@ -4,14 +4,31 @@
 import { AppState, StateManager } from './state.js';
 import {
     pushCommand, undo, redo,
-    makeAddDutyCmd, makeDeleteDutyCmd,
-    makeAddTaskCmd, makeDeleteTaskCmd,
-    makeClearAllCmd,
     updateHistoryButtons
 } from './history.js';
-import { saveToLocalStorage, loadFromLocalStorage } from './storage.js';
-import { showStatus } from './design-system.js';
-import { exportProject, importProject } from './fileEngine.js';
+// NOTE: storage.js, design-system.js and fileEngine.js are not yet
+// available as separate modules.  Provide minimal inline stubs so this
+// module loads without errors, and import showStatus from renderer.js
+// which is the single file that actually renders the DOM.
+import { showStatus } from './renderer.js';
+
+/** Persist state to localStorage (stub — extend when storage.js exists). */
+function saveToLocalStorage() {
+    try { localStorage.setItem('dacum_state', JSON.stringify({ duties: AppState.duties })); } catch (_) {}
+}
+/** Load state from localStorage (stub — extend when storage.js exists). */
+function loadFromLocalStorage() {
+    return null;
+}
+/** Export project file (stub — extend when fileEngine.js exists). */
+function exportProject(id) { console.warn('exportProject: fileEngine.js not yet available', id); }
+/** Import project file (stub — extend when fileEngine.js exists). */
+function importProject(file) { console.warn('importProject: fileEngine.js not yet available', file); }
+
+// Renderer shim — calls are no-ops because renderer.js controls the DOM
+// directly via addDuty/addTask/restoreDuties rather than through a Renderer
+// object.  Keeping the reference so the rest of the module compiles cleanly.
+const Renderer = { renderAll() {}, renderCardView() {}, renderTableView() {} };
 
 // ── Image state (module-level) ────────────────────────────────
 export let producedForImage = null;
@@ -57,53 +74,27 @@ let customSectionCounter = 0;
 //  DUTY & TASK MANAGEMENT
 // ══════════════════════════════════════════════════════════════
 
+// ── Duty / Task management ────────────────────────────────────
+// renderer.js owns the DOM-based duty/task model (snapshotDuties /
+// restoreDuties) and exposes addDuty, addTask, removeDuty, removeTask
+// as window.* globals so inline onclick= handlers work.
+// These named exports delegate to those globals so any code that imports
+// from events.js continues to work without duplicating logic.
 export function addDuty() {
-    AppState.dutyCount++;
-    const dutyId = 'duty_' + AppState.dutyCount;
-    AppState.taskCounts[dutyId] = 0;
-    const dutyObj = { id: dutyId, title: '', tasks: [] };
-    const cmd = makeAddDutyCmd(dutyObj);
-    cmd.execute();
-    pushCommand(cmd);
-    
+    if (typeof window.addDuty === 'function') window.addDuty();
 }
-
 export function removeDuty(dutyId) {
-    const cmd = makeDeleteDutyCmd(dutyId);
-    cmd.execute();
-    pushCommand(cmd);
-    
+    if (typeof window.removeDuty === 'function') window.removeDuty(dutyId);
 }
-
 export function addTask(dutyId) {
-    AppState.taskCounts[dutyId] = (AppState.taskCounts[dutyId] || 0) + 1;
-    const taskId = 'task_' + dutyId + '_' + AppState.taskCounts[dutyId];
-    const taskObj = { id: taskId, text: '' };
-    const cmd = makeAddTaskCmd(dutyId, taskObj);
-    cmd.execute();
-    pushCommand(cmd);
-    
+    if (typeof window.addTask === 'function') window.addTask(dutyId);
 }
-
 export function removeTask(taskId) {
-    const cmd = makeDeleteTaskCmd(taskId);
-    cmd.execute();
-    pushCommand(cmd);
-    
+    if (typeof window.removeTask === 'function') window.removeTask(taskId);
 }
 
 export function clearDuty(dutyId) {
-    if (confirm('Are you sure you want to clear this duty and all its tasks?')) {
-        const duty = AppState.duties.find(d => d.id === dutyId);
-        if (duty) {
-            duty.title = '';
-            duty.tasks.forEach(t => { t.text = ''; });
-        }
-        saveToLocalStorage();
-        updateHistoryButtons();
-        
-        showStatus('Duty cleared! ✓', 'success');
-    }
+    if (typeof window.clearDuty === 'function') window.clearDuty(dutyId);
 }
 
 export function cvAddDuty() { addDuty(); }
@@ -117,9 +108,9 @@ export function toggleCardView() {
     localStorage.setItem('preferredView', AppState.isCardView ? 'card' : 'table');
     // Render only the now-visible view, not both
     if (AppState.isCardView) {
-        
+        Renderer.renderCardView(StateManager.state);
     } else {
-        
+        Renderer.renderTableView(StateManager.state);
     }
 }
 
@@ -157,10 +148,11 @@ export function clearAll() {
     _clearImagePreview('producedFor');
     _clearImagePreview('producedBy');
 
-    // Build and push CLEAR_ALL command
-    const cmd = makeClearAllCmd(AppState.duties, AppState.dutyCount, AppState.taskCounts);
-    cmd.execute();
-    pushCommand(cmd);
+    // Clear duties via AppState (DOM update handled by renderer.js clearAll)
+    AppState.duties     = [];
+    AppState.dutyCount  = 0;
+    AppState.taskCounts = {};
+    updateHistoryButtons();
 
     // Reset to table view if card view was active — use the same
     // inner-container toggle so the .tabs bar is never touched.
@@ -205,7 +197,7 @@ export function clearAll() {
 
     saveToLocalStorage();
     updateHistoryButtons();
-    
+    Renderer.renderAll(StateManager.state);
     showStatus('All data cleared! ✓', 'success');
 }
 
@@ -501,7 +493,7 @@ export function loadFromJSON(event) {
                 StateManager.redoStack = [];
                 saveToLocalStorage();
                 updateHistoryButtons();
-                
+                Renderer.renderAll(StateManager.state);
                 showStatus('Data loaded successfully! ✓', 'success');
                 event.target.value = '';
             } catch (parseErr) {
@@ -1008,14 +1000,15 @@ export const EventBinder = {
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 this.classList.add('active');
                 document.getElementById(tabId).classList.add('active');
-                if (tabId === 'duties-tab' && AppState.duties.length === 0) {
-                    AppState.dutyCount++;
-                    const initDutyId = 'duty_' + AppState.dutyCount;
-                    AppState.taskCounts[initDutyId] = 1;
-                    AppState.duties.push({ id: initDutyId, title: '', tasks: [{ id: 'task_' + initDutyId + '_1', text: '' }] });
+                if (tabId === 'duties-tab' && document.getElementById('dutiesContainer') &&
+                    document.getElementById('dutiesContainer').children.length === 0) {
+                    // Use renderer.js globals to add the first duty+task without history
+                    if (typeof window.addDuty === 'function') window.addDuty();
+                    if (typeof window.addTask === 'function') {
+                        window.addTask('duty_' + AppState.dutyCount);
+                    }
                     saveToLocalStorage();
                     updateHistoryButtons();
-                    
                 }
             });
         });
@@ -1030,23 +1023,21 @@ export const EventBinder = {
             if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
                 e.preventDefault();
                 undo();
-                
+                Renderer.renderAll(StateManager.state);
                 updateHistoryButtons();
             }
             if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
                 e.preventDefault();
                 redo();
-                
+                Renderer.renderAll(StateManager.state);
                 updateHistoryButtons();
             }
         });
 
         // ── Expose undo/redo to window for HTML onclick= buttons ─
         // index.html buttons use onclick="undo()" / onclick="redo()"
-        // Note: renderer.js DOMContentLoaded also sets these; whichever runs last wins.
-        // Both call the same history functions so either is correct.
-        window.undo = () => { undo(); updateHistoryButtons(); };
-        window.redo = () => { redo(); updateHistoryButtons(); };
+        window.undo = () => { undo(); Renderer.renderAll(StateManager.state); updateHistoryButtons(); };
+        window.redo = () => { redo(); Renderer.renderAll(StateManager.state); updateHistoryButtons(); };
 
         // ── Close snapshot panel on outside click ───────────────
         // #floatingPanel was removed — the trigger is now #debugBtn
@@ -1072,6 +1063,3 @@ export const EventBinder = {
         });
     }
 };
-
-// Auto-initialize event bindings
-document.addEventListener('DOMContentLoaded', () => EventBinder.init());
