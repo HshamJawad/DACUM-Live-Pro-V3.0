@@ -10,7 +10,6 @@ import {
     updateHistoryButtons
 } from './history.js';
 import { saveToLocalStorage, loadFromLocalStorage } from './storage.js';
-import { Renderer } from './renderer.js';
 import { showStatus } from './design-system.js';
 import { exportProject, importProject } from './fileEngine.js';
 
@@ -66,14 +65,14 @@ export function addDuty() {
     const cmd = makeAddDutyCmd(dutyObj);
     cmd.execute();
     pushCommand(cmd);
-    Renderer.renderAll(StateManager.state);
+    
 }
 
 export function removeDuty(dutyId) {
     const cmd = makeDeleteDutyCmd(dutyId);
     cmd.execute();
     pushCommand(cmd);
-    Renderer.renderAll(StateManager.state);
+    
 }
 
 export function addTask(dutyId) {
@@ -83,14 +82,14 @@ export function addTask(dutyId) {
     const cmd = makeAddTaskCmd(dutyId, taskObj);
     cmd.execute();
     pushCommand(cmd);
-    Renderer.renderAll(StateManager.state);
+    
 }
 
 export function removeTask(taskId) {
     const cmd = makeDeleteTaskCmd(taskId);
     cmd.execute();
     pushCommand(cmd);
-    Renderer.renderAll(StateManager.state);
+    
 }
 
 export function clearDuty(dutyId) {
@@ -102,7 +101,7 @@ export function clearDuty(dutyId) {
         }
         saveToLocalStorage();
         updateHistoryButtons();
-        Renderer.renderAll(StateManager.state);
+        
         showStatus('Duty cleared! ✓', 'success');
     }
 }
@@ -118,9 +117,9 @@ export function toggleCardView() {
     localStorage.setItem('preferredView', AppState.isCardView ? 'card' : 'table');
     // Render only the now-visible view, not both
     if (AppState.isCardView) {
-        Renderer.renderCardView(StateManager.state);
+        
     } else {
-        Renderer.renderTableView(StateManager.state);
+        
     }
 }
 
@@ -206,7 +205,7 @@ export function clearAll() {
 
     saveToLocalStorage();
     updateHistoryButtons();
-    Renderer.renderAll(StateManager.state);
+    
     showStatus('All data cleared! ✓', 'success');
 }
 
@@ -502,7 +501,7 @@ export function loadFromJSON(event) {
                 StateManager.redoStack = [];
                 saveToLocalStorage();
                 updateHistoryButtons();
-                Renderer.renderAll(StateManager.state);
+                
                 showStatus('Data loaded successfully! ✓', 'success');
                 event.target.value = '';
             } catch (parseErr) {
@@ -1016,7 +1015,7 @@ export const EventBinder = {
                     AppState.duties.push({ id: initDutyId, title: '', tasks: [{ id: 'task_' + initDutyId + '_1', text: '' }] });
                     saveToLocalStorage();
                     updateHistoryButtons();
-                    Renderer.renderAll(StateManager.state);
+                    
                 }
             });
         });
@@ -1031,13 +1030,13 @@ export const EventBinder = {
             if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
                 e.preventDefault();
                 undo();
-                Renderer.renderAll(StateManager.state);
+                
                 updateHistoryButtons();
             }
             if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
                 e.preventDefault();
                 redo();
-                Renderer.renderAll(StateManager.state);
+                
                 updateHistoryButtons();
             }
         });
