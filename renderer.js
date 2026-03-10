@@ -3,7 +3,7 @@
 // No external API calls — those live in api.js.
 import { state } from './state.js';
 // --- UNDO/REDO INTEGRATION ---
-import { pushHistory, pushCommand, StateManager, updateHistoryButtons, undo as _histUndo, redo as _histRedo } from './history.js';
+import { pushHistory, pushCommand, updateHistoryButtons, undo as _histUndo, redo as _histRedo } from './history.js';
 // --- END UNDO/REDO INTEGRATION ---
 
 function toggleSkillsLevelSection() {
