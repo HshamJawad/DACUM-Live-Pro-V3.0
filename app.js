@@ -3,9 +3,9 @@
 // Application entry point — wires everything together on DOMContentLoaded.
 // ============================================================
 
-import { appState }          from './core/state.js';
+import { appState }          from './state.js';
 import { renderSkillsLevel } from './renderer.js';
-import { updateUsageBadge }  from './system/storage.js';
+import { updateUsageBadge }  from './storage.js';
 import { setupTabs }         from './tabs.js';
 import { setupEvents }       from './events.js';
 import { switchTab }         from './projects.js';
