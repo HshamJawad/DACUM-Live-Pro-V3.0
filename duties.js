@@ -3,8 +3,8 @@
 // Duty / Task creation, removal, and DOM management.
 // ============================================================
 
-import { appState } from '../core/state.js';
-import { showStatus } from '../ui/renderer.js';
+import { appState } from './state.js';
+import { showStatus } from './renderer.js';
 
 // ── Duty Management ───────────────────────────────────────────
 

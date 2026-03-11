@@ -1,17 +1,17 @@
 // ============================================================
-// src/ui/events.js
+// /events.js
 // All addEventListener calls and delegated event handling.
 // Replaces all inline onclick="..." attributes.
 // ============================================================
 
-import { appState }             from '../core/state.js';
-import { addDuty, addTask, removeDuty, removeTask, clearDuty } from '../features/duties.js';
+import { appState }             from './state.js';
+import { addDuty, addTask, removeDuty, removeTask, clearDuty } from './duties.js';
 import { updateCollectionMode, updateWorkflowMode, updateParticipantCount,
   updatePriorityFormula, updateTVExportMode, updateTrainingLoadMethod,
   loadDutiesForVerification, updateRating, updatePerformsTask, updateComments,
   updateWorkshopCount, validateAndComputeTask, validateAndComputeWorkshopResults,
   toggleDashboard, refreshDashboard, toggleDutyLevelSummary, exportDashboard,
-  attachAccordionListeners }    from '../features/tasks.js';
+  attachAccordionListeners }    from './tasks.js';
 import { bypassToClusteringTab, resetVerificationDecision, initializeClusteringFromTasks,
   updateCreateClusterButton, createCluster, renameCluster, deleteCluster,
   removeTaskFromCluster, addTaskToClusterFromDropdown, updateClusterRange,
@@ -21,7 +21,7 @@ import { bypassToClusteringTab, resetVerificationDecision, initializeClusteringF
   reassignPCToLO, unassignPCFromLO,
   updateCreateModuleButton, createModule, renameModule, deleteModule,
   removeLoFromModule, addLoToModuleFromDropdown,
-  openModuleBuilderFromMapping, exportModuleMappingJSON }  from '../features/modules.js';
+  openModuleBuilderFromMapping, exportModuleMappingJSON }  from './modules.js';
 import { showStatus, toggleInfoBox, escapeHtml,
   toggleSkillsLevelSection, addSkillsCategory, removeSkillsCategory,
   updateSkillsCategoryName, addSkillsCompetency, removeSkillsCompetency,
@@ -30,13 +30,13 @@ import { showStatus, toggleInfoBox, escapeHtml,
   addCustomSection, removeCustomSection }                  from './renderer.js';
 import { exportToPDF, exportToWord,
   exportTaskVerificationPDF, exportTaskVerificationWord }  from './exports.js';
-import { clearAll, clearCurrentTab, generateAIDacum }      from '../system/projects.js';
-import { handleImageUpload, removeImage }                  from '../system/storage.js';
-import { saveToJSON, loadFromJSON }                        from '../core/snapshots.js';
+import { clearAll, clearCurrentTab, generateAIDacum }      from './projects.js';
+import { handleImageUpload, removeImage }                  from './storage.js';
+import { saveToJSON, loadFromJSON }                        from './snapshots.js';
 import { lwFinalizeAndCreateSession, lwCopyLink, lwShowQRCode,
   lwCloseQRModal, lwDownloadQRPNG, lwFetchResults,
   lwExportJSON, lwExportCSV, lwExportSnapshot,
-  lwCloseVoting, lwExportVerifiedPDF, lwExportVerifiedDOCX }  from '../lw/workshop.js';
+  lwCloseVoting, lwExportVerifiedPDF, lwExportVerifiedDOCX }  from './workshop.js';
 
 // ── Delegation helper ─────────────────────────────────────────
 

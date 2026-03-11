@@ -1,14 +1,14 @@
 // ============================================================
-// src/ui/tabs.js
+// /tabs.js
 // Tab click setup (non-switchTab tabs, i.e. all except the
 // ones gated by clusteringAllowed which go via switchTab).
 // ============================================================
 
-import { appState } from '../core/state.js';
-import { addDuty, addTask } from '../features/duties.js';
-import { initializeClusteringFromTasks } from '../features/modules.js';
+import { appState } from './state.js';
+import { addDuty, addTask } from './duties.js';
+import { initializeClusteringFromTasks } from './modules.js';
 import { renderPCSourceList, renderLearningOutcomes,
-  renderModuleLoList, renderModules } from '../features/modules.js';
+  renderModuleLoList, renderModules } from './modules.js';
 
 export function setupTabs() {
   document.querySelectorAll('.tab').forEach(tab => {

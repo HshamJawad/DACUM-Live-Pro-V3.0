@@ -1,5 +1,5 @@
 // ============================================================
-// src/core/state.js
+// /state.js
 // Single source of truth for all mutable application state.
 // Import appState in any module that needs to read or write state.
 // ============================================================

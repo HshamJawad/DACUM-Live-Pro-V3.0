@@ -1,14 +1,14 @@
 // ============================================================
-// src/system/projects.js
+// /projects.js
 // Project-level ops: clear, switch tab, AI generation
 // ============================================================
 
-import { appState } from '../core/state.js';
-import { showStatus } from '../ui/renderer.js';
-import { addDuty, addTask } from '../features/duties.js';
-import { resetSkillsLevel, renderSkillsLevel } from '../ui/renderer.js';
+import { appState } from './state.js';
+import { showStatus } from './renderer.js';
+import { addDuty, addTask } from './duties.js';
+import { resetSkillsLevel, renderSkillsLevel } from './renderer.js';
 import { renderLearningOutcomes, renderPCSourceList, renderModules, renderModuleLoList,
-  renderClusters, renderAvailableTasks } from '../features/modules.js';
+  renderClusters, renderAvailableTasks } from './modules.js';
 import { checkUsageLimit, incrementUsage, showLoadingModal, hideLoadingModal } from './storage.js';
 
 const BACKEND_URL = 'https://dacum-ai-backend-production.up.railway.app';

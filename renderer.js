@@ -1,10 +1,10 @@
 // ============================================================
-// src/ui/renderer.js
+// /renderer.js
 // Utility functions and Skills Level matrix renderer.
 // Also: addCustomSection, toggleEditHeading, clearSection, formatList.
 // ============================================================
 
-import { appState } from '../core/state.js';
+import { appState } from './state.js';
 
 // ── Status / Utility ──────────────────────────────────────────
 

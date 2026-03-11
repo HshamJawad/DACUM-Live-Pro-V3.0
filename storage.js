@@ -1,10 +1,10 @@
 // ============================================================
-// src/system/storage.js
+// /storage.js
 // Image upload, AI usage limiting, loading modal
 // ============================================================
 
-import { appState } from '../core/state.js';
-import { showStatus } from '../ui/renderer.js';
+import { appState } from './state.js';
+import { showStatus } from './renderer.js';
 
 // ── Constants ─────────────────────────────────────────────────
 export const DAILY_LIMIT  = 10;

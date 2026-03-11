@@ -1,11 +1,11 @@
 // ============================================================
-// src/features/modules.js
+// /modules.js
 // Competency Clustering, Learning Outcomes, and Module Mapping
 // ============================================================
 
-import { appState } from '../core/state.js';
-import { showStatus } from '../ui/renderer.js';
-import { lwExtractDutiesAndTasks } from '../lw/workshop.js';
+import { appState } from './state.js';
+import { showStatus } from './renderer.js';
+import { lwExtractDutiesAndTasks } from './workshop.js';
 
 // switchTab is exposed on window by app.js to avoid circular deps
 function switchTab(tabId) { window.switchTab(tabId); }

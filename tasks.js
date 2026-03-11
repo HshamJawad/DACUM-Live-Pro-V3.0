@@ -1,10 +1,10 @@
 // ============================================================
-// src/features/tasks.js
+// /tasks.js
 // Task Verification, Workshop Aggregated Counts, Dashboard.
 // ============================================================
 
-import { appState } from '../core/state.js';
-import { showStatus, escapeHtml } from '../ui/renderer.js';
+import { appState } from './state.js';
+import { showStatus, escapeHtml } from './renderer.js';
 
 // ── Mode Controls ─────────────────────────────────────────────
 

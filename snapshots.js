@@ -1,15 +1,15 @@
 // ============================================================
-// src/core/snapshots.js
+// /snapshots.js
 // Save / Load entire application state as a JSON file.
 // ============================================================
 
 import { appState } from './state.js';
-import { showStatus } from '../ui/renderer.js';
-import { addDuty, addTask } from '../features/duties.js';
-import { renderSkillsLevel } from '../ui/renderer.js';
-import { renderLearningOutcomes, renderPCSourceList } from '../features/modules.js';
-import { renderModules, renderModuleLoList } from '../features/modules.js';
-import { loadDutiesForVerification } from '../features/tasks.js';
+import { showStatus } from './renderer.js';
+import { addDuty, addTask } from './duties.js';
+import { renderSkillsLevel } from './renderer.js';
+import { renderLearningOutcomes, renderPCSourceList } from './modules.js';
+import { renderModules, renderModuleLoList } from './modules.js';
+import { loadDutiesForVerification } from './features/tasks.js';
 
 // ── Save ──────────────────────────────────────────────────────
 

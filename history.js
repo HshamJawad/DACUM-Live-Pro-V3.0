@@ -1,5 +1,5 @@
 // ============================================================
-// src/core/history.js
+// /history.js
 // Undo / Redo stub.  Reserved for a future Command-Pattern
 // implementation (DACUM Live Pro V3.0+).
 // ============================================================
