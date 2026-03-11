@@ -4,14 +4,14 @@
 // ============================================================
 
 import { appState }          from './core/state.js';
-import { renderSkillsLevel } from './ui/renderer.js';
+import { renderSkillsLevel } from './renderer.js';
 import { updateUsageBadge }  from './system/storage.js';
-import { setupTabs }         from './ui/tabs.js';
-import { setupEvents }       from './ui/events.js';
-import { switchTab }         from './system/projects.js';
-import { addDuty, addTask }  from './features/duties.js';
-import { updateCollectionMode, updateWorkflowMode, updateDutyLevelSummary } from './features/tasks.js';
-import { lwCheckAndShowSection } from './lw/workshop.js';
+import { setupTabs }         from './tabs.js';
+import { setupEvents }       from './events.js';
+import { switchTab }         from './projects.js';
+import { addDuty, addTask }  from './duties.js';
+import { updateCollectionMode, updateWorkflowMode, updateDutyLevelSummary } from './tasks.js';
+import { lwCheckAndShowSection } from './workshop.js';
 
 // Expose switchTab globally (called from HTML onclick and live workshop guards)
 window.switchTab = switchTab;
