@@ -9,7 +9,7 @@ import { addDuty, addTask } from './duties.js';
 import { renderSkillsLevel } from './renderer.js';
 import { renderLearningOutcomes, renderPCSourceList } from './modules.js';
 import { renderModules, renderModuleLoList } from './modules.js';
-import { loadDutiesForVerification } from './tasks.js';
+import { loadDutiesForVerification } from './features/tasks.js';
 
 // ── Save ──────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export function saveToJSON() {
     };
 
     // Collect duties and tasks
-    document.querySelectorAll('[data-duty-id]').forEach(dutyInput => {
+    document.querySelectorAll('input[data-duty-id]').forEach(dutyInput => {
       const dutyText = dutyInput.value.trim();
       const dutyId = dutyInput.getAttribute('data-duty-id');
       const tasks = [];
