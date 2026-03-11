@@ -3,7 +3,7 @@
 // PDF and DOCX export functions (TV standalone + full chart)
 // ============================================================
 
-import { appState } from '.state.js';
+import { appState } from './state.js';
 import { showStatus, escapeHtml } from './renderer.js';
 
 export async function exportTaskVerificationWord() {

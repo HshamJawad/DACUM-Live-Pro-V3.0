@@ -9,7 +9,7 @@ import { addDuty, addTask } from './duties.js';
 import { renderSkillsLevel } from './renderer.js';
 import { renderLearningOutcomes, renderPCSourceList } from './modules.js';
 import { renderModules, renderModuleLoList } from './modules.js';
-import { loadDutiesForVerification } from './features/tasks.js';
+import { loadDutiesForVerification } from './tasks.js';
 
 // ── Save ──────────────────────────────────────────────────────
 
