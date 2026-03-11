@@ -1,5 +1,5 @@
 // ============================================================
-// src/app.js
+// /app.js
 // Application entry point — wires everything together on DOMContentLoaded.
 // ============================================================
 
