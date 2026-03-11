@@ -3,7 +3,7 @@
 // Live Workshop Module — session creation, voting, results
 // ============================================================
 
-import { appState } from '.state.js';
+import { appState } from './state.js';
 import { showStatus } from './renderer.js';
 
 export const LW_API_BASE = 'https://live-session-backend-production.up.railway.app/api';
