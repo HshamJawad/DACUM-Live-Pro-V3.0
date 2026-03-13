@@ -13,6 +13,7 @@ import { addDuty, addTask }  from './duties.js';
 import { updateCollectionMode, updateWorkflowMode, updateDutyLevelSummary } from './tasks.js';
 import { lwCheckAndShowSection } from './workshop.js';
 import { setBaseline }       from './history.js';
+import { renderSnapshotPanel } from './workshop_snapshots.js';
 
 // Expose switchTab globally (called from HTML onclick and live workshop guards)
 window.switchTab = switchTab;
@@ -38,21 +39,25 @@ document.addEventListener('DOMContentLoaded', function () {
     addTask(`duty_${appState.dutyCount}`);
   }
 
-  // Anchor the history baseline — undo can never go earlier than this initial state
+  // Anchor the history baseline
   setBaseline();
+
+  // Render saved snapshots panel
+  renderSnapshotPanel();
 
   // Initialize Task Verification controls
   updateCollectionMode();
   updateWorkflowMode();
 
   // Check Live Workshop section visibility
-  const urlParams   = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(window.location.search);
   const sessionParam = urlParams.get('lwsession');
   if (sessionParam) {
-    const currentPath      = window.location.pathname;
-    const directory        = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+    // Participant mode – redirect
+    const currentPath = window.location.pathname;
+    const directory   = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
     const participantFileUrl = window.location.origin + directory + 'DACUM_LiveWorkshop_Participant.html';
-    window.location.href   = `${participantFileUrl}?lwsession=${sessionParam}`;
+    window.location.href = `${participantFileUrl}?lwsession=${sessionParam}`;
   } else {
     setTimeout(lwCheckAndShowSection, 100);
   }
