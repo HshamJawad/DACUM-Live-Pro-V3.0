@@ -5,7 +5,7 @@
 
 import { appState } from './state.js';
 import { showStatus } from './renderer.js';
-import { addDuty, addTask } from './duties.js';
+import { addDuty, addTask, syncAllFromDOM } from './duties.js';
 import { renderSkillsLevel } from './renderer.js';
 import { renderLearningOutcomes, renderPCSourceList } from './modules.js';
 import { renderModules, renderModuleLoList } from './modules.js';
@@ -201,6 +201,9 @@ export function loadFromJSON(event) {
           addDuty();
           addTask(`duty_${appState.dutyCount}`);
         }
+
+        // Sync DOM values → appState.dutiesData (titles and task texts)
+        syncAllFromDOM();
 
         // Additional Info
         if (data.additionalInfo) {
