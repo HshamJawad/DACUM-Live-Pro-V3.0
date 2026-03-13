@@ -1,11 +1,11 @@
 // ============================================================
 // /events.js
 // All addEventListener calls and delegated event handling.
-// Replaces all inline onclick="..." attributes.
 // ============================================================
 
 import { appState }             from './state.js';
-import { addDuty, addTask, removeDuty, removeTask, clearDuty } from './duties.js';
+import { addDuty, addTask, removeDuty, removeTask, clearDuty,
+         syncDutyTitle, syncTaskText }                       from './duties.js';
 import { updateCollectionMode, updateWorkflowMode, updateParticipantCount,
   updatePriorityFormula, updateTVExportMode, updateTrainingLoadMethod,
   loadDutiesForVerification, updateRating, updatePerformsTask, updateComments,
@@ -33,12 +33,12 @@ import { exportToPDF, exportToWord,
 import { clearAll, clearCurrentTab, generateAIDacum }      from './projects.js';
 import { handleImageUpload, removeImage }                  from './storage.js';
 import { saveToJSON, loadFromJSON }                        from './snapshots.js';
-import { saveSnapshot, restoreSnapshot,
-         deleteSnapshot }                                  from './workshop_snapshots.js';
 import { lwFinalizeAndCreateSession, lwCopyLink, lwShowQRCode,
   lwCloseQRModal, lwDownloadQRPNG, lwFetchResults,
   lwExportJSON, lwExportCSV, lwExportSnapshot,
   lwCloseVoting, lwExportVerifiedPDF, lwExportVerifiedDOCX }  from './workshop.js';
+import { pushHistoryState, undo, redo,
+         resetHistoryToCurrentState }                      from './history.js';
 
 // ── Delegation helper ─────────────────────────────────────────
 
@@ -46,45 +46,64 @@ function delegate(container, selector, eventType, handler) {
   if (!container) return;
   container.addEventListener(eventType, function (e) {
     const target = e.target.closest(selector);
-    if (target && container.contains(target)) {
-      handler(e, target);
-    }
+    if (target && container.contains(target)) handler(e, target);
   });
 }
 
 // ── Setup all events ──────────────────────────────────────────
 
 export function setupEvents() {
-  // ── Static buttons ────────────────────────────────────────
 
-  _on('btnAddDuty',            'click', () => addDuty());
+  // ── Static buttons ─────────────────────────────────────────
+
+  // Add Duty — push history BEFORE mutation
+  _on('btnAddDuty', 'click', () => { pushHistoryState(); addDuty(); });
+
   _on('btnSaveJSON',  'click', () => saveToJSON());
-  _on('btnClearAll',  'click', () => clearAll());
-
-  // Save Snapshot button
-  _on('btnSaveSnapshot', 'click', () => {
-    const name = prompt('Enter a name for this snapshot:', _defaultSnapName());
-    if (name) saveSnapshot(name);
+  _on('btnClearAll',  'click', () => {
+    clearAll();
+    // clearAll is synchronous (confirm → DOM ops); reset history afterwards
+    resetHistoryToCurrentState();
   });
-  _on('aiGenerateBtn',         'click', () => generateAIDacum());
-  _on('btnExportPDF',          'click', () => exportToPDF());
-  _on('btnExportWord',         'click', () => exportToWord());
+  _on('aiGenerateBtn', 'click', () => {
+    generateAIDacum().then(() => resetHistoryToCurrentState())
+                     .catch(() => resetHistoryToCurrentState());
+  });
+  _on('btnExportPDF',  'click', () => exportToPDF());
+  _on('btnExportWord', 'click', () => exportToWord());
+
+  // Undo / Redo buttons
+  _on('btnUndo', 'click', () => undo());
+  _on('btnRedo', 'click', () => redo());
+
+  // Keyboard shortcuts (only active on the Duties & Tasks tab)
+  document.addEventListener('keydown', function (e) {
+    const dutiesTab = document.getElementById('duties-tab');
+    if (!dutiesTab || !dutiesTab.classList.contains('active')) return;
+    if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault(); undo();
+    }
+    if (e.ctrlKey && (e.key.toLowerCase() === 'y' ||
+        (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+      e.preventDefault(); redo();
+    }
+  });
 
   // Task Verification controls
-  _onRadioGroup('collectionMode',  () => { updateCollectionMode(); });
-  _onRadioGroup('workflowMode',    () => updateWorkflowMode());
-  _onRadioGroup('priorityFormula', () => updatePriorityFormula());
-  _onRadioGroup('tvExportMode',    () => updateTVExportMode());
+  _onRadioGroup('collectionMode',     () => updateCollectionMode());
+  _onRadioGroup('workflowMode',       () => updateWorkflowMode());
+  _onRadioGroup('priorityFormula',    () => updatePriorityFormula());
+  _onRadioGroup('tvExportMode',       () => updateTVExportMode());
   _onRadioGroup('trainingLoadMethod', () => updateTrainingLoadMethod());
-  _on('workshopParticipants', 'change', () => updateParticipantCount());
-  _on('btnLoadDutiesForVerification', 'click', () => loadDutiesForVerification());
-  _on('btnValidateAll',        'click', () => validateAndComputeWorkshopResults());
-  _on('btnToggleDashboard',    'click', () => toggleDashboard());
-  _on('btnRefreshDashboard',   'click', () => refreshDashboard());
-  _on('btnToggleDutyLevelSummary', 'click', () => toggleDutyLevelSummary());
-  _on('btnExportDashboard',    'click', () => exportDashboard());
-  _on('btnExportTVPDF',        'click', () => exportTaskVerificationPDF());
-  _on('btnExportTVWord',       'click', () => exportTaskVerificationWord());
+  _on('workshopParticipants',          'change', () => updateParticipantCount());
+  _on('btnLoadDutiesForVerification',  'click',  () => loadDutiesForVerification());
+  _on('btnValidateAll',                'click',  () => validateAndComputeWorkshopResults());
+  _on('btnToggleDashboard',            'click',  () => toggleDashboard());
+  _on('btnRefreshDashboard',           'click',  () => refreshDashboard());
+  _on('btnToggleDutyLevelSummary',     'click',  () => toggleDutyLevelSummary());
+  _on('btnExportDashboard',            'click',  () => exportDashboard());
+  _on('btnExportTVPDF',                'click',  () => exportTaskVerificationPDF());
+  _on('btnExportTVWord',               'click',  () => exportTaskVerificationWord());
 
   // Clustering
   _on('btnBypassToClustering',      'click', () => bypassToClusteringTab());
@@ -93,117 +112,176 @@ export function setupEvents() {
   _on('btnCreateCluster',           'click', () => createCluster());
 
   // Learning Outcomes
-  _on('btnCreateLO',                'click', () => createLearningOutcome());
+  _on('btnCreateLO',     'click', () => createLearningOutcome());
 
   // Module Mapping
-  _on('btnCreateModule',            'click', () => createModule());
-  _on('btnOpenModuleBuilder',       'click', () => openModuleBuilderFromMapping());
-  _on('btnExportModuleMapping',     'click', () => exportModuleMappingJSON());
+  _on('btnCreateModule',        'click', () => createModule());
+  _on('btnOpenModuleBuilder',   'click', () => openModuleBuilderFromMapping());
+  _on('btnExportModuleMapping', 'click', () => exportModuleMappingJSON());
 
   // Skills Level
-  _on('btnToggleSkillsLevel',       'click', () => toggleSkillsLevelSection());
-  _on('btnAddSkillsCategory',       'click', () => addSkillsCategory());
-  _on('btnResetSkillsLevel',        'click', () => resetSkillsLevel());
+  _on('btnToggleSkillsLevel', 'click', () => toggleSkillsLevelSection());
+  _on('btnAddSkillsCategory', 'click', () => addSkillsCategory());
+  _on('btnResetSkillsLevel',  'click', () => resetSkillsLevel());
 
   // Additional Info
-  _on('btnAddCustomSection',        'click', () => addCustomSection());
-  _on('btnToggleInfoBox',           'click', () => toggleInfoBox());
+  _on('btnAddCustomSection', 'click', () => addCustomSection());
+  _on('btnToggleInfoBox',    'click', () => toggleInfoBox());
 
   // Image upload
-  _on('producedForImageInput',      'change', (e) => handleImageUpload(e, 'producedFor'));
-  _on('producedByImageInput',       'change', (e) => handleImageUpload(e, 'producedBy'));
-  _on('removeProducedForImage',     'click',  () => removeImage('producedFor'));
-  _on('removeProducedByImage',      'click',  () => removeImage('producedBy'));
+  _on('producedForImageInput',  'change', (e) => handleImageUpload(e, 'producedFor'));
+  _on('producedByImageInput',   'change', (e) => handleImageUpload(e, 'producedBy'));
+  _on('removeProducedForImage', 'click',  () => removeImage('producedFor'));
+  _on('removeProducedByImage',  'click',  () => removeImage('producedBy'));
 
-  // JSON Save/Load
-  _on('loadFileInput',              'change', (e) => loadFromJSON(e));
+  // JSON Save / Load
+  _on('loadFileInput', 'change', (e) => {
+    loadFromJSON(e);
+    // loadFromJSON is async (FileReader); reset history once file is processed
+    setTimeout(resetHistoryToCurrentState, 600);
+  });
 
-  // Live Workshop
-  _on('btnLWFinalize',              'click', () => lwFinalizeAndCreateSession());
-  _on('btnLWCopyLink',              'click', () => lwCopyLink());
-  _on('btnLWShowQR',                'click', () => lwShowQRCode());
-  _on('btnLWFetchResults',          'click', () => lwFetchResults());
-  _on('btnLWExportJSON',            'click', () => lwExportJSON());
-  _on('btnLWExportCSV',             'click', () => lwExportCSV());
-  _on('btnLWExportSnapshot',        'click', () => lwExportSnapshot());
-  _on('btnLWCloseVoting',           'click', () => lwCloseVoting());
-  _on('btnLWExportVerifiedPDF',     'click', () => lwExportVerifiedPDF());
-  _on('btnLWExportVerifiedDOCX',    'click', () => lwExportVerifiedDOCX());
-  _on('btnLWCloseQR',               'click', () => lwCloseQRModal());
-  _on('btnLWDownloadQR',            'click', () => lwDownloadQRPNG());
-
-  // Per-tab clear buttons (may use data-tab-id)
+  // Per-tab clear buttons
   document.querySelectorAll('[data-action="clear-tab"]').forEach(btn => {
     btn.addEventListener('click', function () {
       clearCurrentTab(this.getAttribute('data-tab-id'));
+      resetHistoryToCurrentState();
     });
   });
 
-  // ── Delegated events ──────────────────────────────────────
+  // Live Workshop
+  _on('btnLWFinalize',          'click', () => lwFinalizeAndCreateSession());
+  _on('btnLWCopyLink',          'click', () => lwCopyLink());
+  _on('btnLWShowQR',            'click', () => lwShowQRCode());
+  _on('btnLWFetchResults',      'click', () => lwFetchResults());
+  _on('btnLWExportJSON',        'click', () => lwExportJSON());
+  _on('btnLWExportCSV',         'click', () => lwExportCSV());
+  _on('btnLWExportSnapshot',    'click', () => lwExportSnapshot());
+  _on('btnLWCloseVoting',       'click', () => lwCloseVoting());
+  _on('btnLWExportVerifiedPDF', 'click', () => lwExportVerifiedPDF());
+  _on('btnLWExportVerifiedDOCX','click', () => lwExportVerifiedDOCX());
+  _on('btnLWCloseQR',           'click', () => lwCloseQRModal());
+  _on('btnLWDownloadQR',        'click', () => lwDownloadQRPNG());
 
-  // Duties container
+  // ── Delegated events ────────────────────────────────────────
+
+  // ── Duties container ────────────────────────────────────────
   const dutiesCont = document.getElementById('dutiesContainer');
   if (dutiesCont) {
+
+    // Structural clicks — push history BEFORE mutation
     dutiesCont.addEventListener('click', function (e) {
       const target = e.target;
+
       if (target.matches('[data-action="add-task"]')) {
+        pushHistoryState();
         addTask(target.getAttribute('data-duty-id'));
+
       } else if (target.matches('[data-action="remove-duty"]')) {
+        pushHistoryState();
         removeDuty(target.getAttribute('data-duty-id'));
+
       } else if (target.matches('[data-action="remove-task"]')) {
+        pushHistoryState();
         removeTask(target.getAttribute('data-task-div-id'));
+
       } else if (target.matches('[data-action="clear-duty"]')) {
+        // clearDuty has its own confirm() — push history before it runs
+        pushHistoryState();
         clearDuty(target.getAttribute('data-duty-id'));
+      }
+    });
+
+    // ── Word-level text undo (Notion / Word burst model) ──────
+    //
+    // A "burst" = all keystrokes within a 120 ms window.
+    // On the FIRST keystroke of a burst we push the pre-burst state
+    // so Undo can jump back to exactly where typing started.
+    // After 120 ms of silence the burst resets, letting the next
+    // keystroke open a new undo checkpoint.
+
+    let _burstPushed  = false;  // have we already saved the pre-burst state?
+    let _burstTimer   = null;
+
+    dutiesCont.addEventListener('focusin', function (e) {
+      // Entering an input resets the burst flag so the very first
+      // keystroke in this field always creates a new undo checkpoint.
+      if (e.target.matches('input[data-duty-id], input[data-task-id]')) {
+        clearTimeout(_burstTimer);
+        _burstPushed = false;
+      }
+    });
+
+    dutiesCont.addEventListener('input', function (e) {
+      const target = e.target;
+
+      // Only track duty/task text inputs
+      if (target.matches('input[data-duty-id]')) {
+        syncDutyTitle(target.getAttribute('data-duty-id'), target.value);
+      } else if (target.matches('input[data-task-id]')) {
+        syncTaskText(target.getAttribute('data-task-id'), target.value);
+      } else {
+        return;
+      }
+
+      // Push the pre-burst snapshot on the very first keystroke of a burst
+      if (!_burstPushed) {
+        pushHistoryState();
+        _burstPushed = true;
+      }
+
+      // Reset burst window: 120 ms of silence → next keystroke is a new burst
+      clearTimeout(_burstTimer);
+      _burstTimer = setTimeout(() => { _burstPushed = false; }, 120);
+    });
+
+    dutiesCont.addEventListener('focusout', function (e) {
+      // Commit immediately on blur so the state is always current
+      // before any subsequent structural action (e.g. clicking Add Task)
+      if (e.target.matches('input[data-duty-id], input[data-task-id]')) {
+        clearTimeout(_burstTimer);
+        _burstPushed = false;
       }
     });
   }
 
-  // Verification accordion
+  // ── Verification accordion ──────────────────────────────────
   const verCont = document.getElementById('verificationAccordionContainer');
   if (verCont) {
     verCont.addEventListener('click', function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
-      const action = target.getAttribute('data-action');
+      const action  = target.getAttribute('data-action');
       const taskKey = target.getAttribute('data-task-key');
-      const dimension = target.getAttribute('data-dimension');
-      if (action === 'update-rating') {
-        updateRating(taskKey, dimension, target.value);
-      } else if (action === 'update-performs-task') {
-        updatePerformsTask(taskKey, target.value);
-      } else if (action === 'update-comments') {
-        updateComments(taskKey, target.value);
-      } else if (action === 'update-workshop-count') {
-        updateWorkshopCount(taskKey, dimension, target.getAttribute('data-value'), parseInt(target.value));
-      } else if (action === 'validate-compute-task') {
-        validateAndComputeTask(taskKey);
-      }
+      const dim     = target.getAttribute('data-dimension');
+      if (action === 'update-rating')         updateRating(taskKey, dim, target.value);
+      else if (action === 'update-performs-task') updatePerformsTask(taskKey, target.value);
+      else if (action === 'update-comments')   updateComments(taskKey, target.value);
+      else if (action === 'update-workshop-count') {
+        updateWorkshopCount(taskKey, dim, target.getAttribute('data-value'), parseInt(target.value));
+      } else if (action === 'validate-compute-task') validateAndComputeTask(taskKey);
     });
     verCont.addEventListener('change', function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
-      const action = target.getAttribute('data-action');
+      const action  = target.getAttribute('data-action');
       const taskKey = target.getAttribute('data-task-key');
-      const dimension = target.getAttribute('data-dimension');
-      if (action === 'update-rating') {
-        updateRating(taskKey, dimension, target.value);
-      } else if (action === 'update-performs-task') {
-        updatePerformsTask(taskKey, target.value);
-      } else if (action === 'update-comments') {
-        updateComments(taskKey, target.value);
-      }
+      const dim     = target.getAttribute('data-dimension');
+      if (action === 'update-rating')             updateRating(taskKey, dim, target.value);
+      else if (action === 'update-performs-task') updatePerformsTask(taskKey, target.value);
+      else if (action === 'update-comments')       updateComments(taskKey, target.value);
     });
   }
 
-  // Clusters container
+  // ── Clusters container ──────────────────────────────────────
   const clustersCont = document.getElementById('clustersContainer');
   if (clustersCont) {
     clustersCont.addEventListener('click', function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
       const action = target.getAttribute('data-action');
-      if (action === 'rename-cluster')          renameCluster(target.getAttribute('data-cluster-id'));
-      else if (action === 'delete-cluster')     deleteCluster(target.getAttribute('data-cluster-id'));
+      if (action === 'rename-cluster')             renameCluster(target.getAttribute('data-cluster-id'));
+      else if (action === 'delete-cluster')        deleteCluster(target.getAttribute('data-cluster-id'));
       else if (action === 'remove-task-from-cluster') {
         removeTaskFromCluster(target.getAttribute('data-cluster-id'), parseInt(target.getAttribute('data-task-index')));
       }
@@ -211,8 +289,7 @@ export function setupEvents() {
     clustersCont.addEventListener('change', function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
-      const action = target.getAttribute('data-action');
-      if (action === 'update-cluster-range') {
+      if (target.getAttribute('data-action') === 'update-cluster-range') {
         updateClusterRange(target.getAttribute('data-cluster-id'), target.value);
       }
     });
@@ -239,7 +316,7 @@ export function setupEvents() {
     });
   }
 
-  // Available tasks list (checkboxes + dropdowns)
+  // ── Available tasks list ────────────────────────────────────
   const availableTasksList = document.getElementById('availableTasksList');
   if (availableTasksList) {
     availableTasksList.addEventListener('change', function (e) {
@@ -254,7 +331,7 @@ export function setupEvents() {
     });
   }
 
-  // PC Source List (LO)
+  // ── PC Source List (LO) ─────────────────────────────────────
   const pcSourceList = document.getElementById('pcSourceList');
   if (pcSourceList) {
     pcSourceList.addEventListener('change', function (e) {
@@ -274,27 +351,20 @@ export function setupEvents() {
     });
   }
 
-  // LO blocks container
+  // ── LO blocks container ─────────────────────────────────────
   const loBlocksCont = document.getElementById('loBlocksContainer');
   if (loBlocksCont) {
     loBlocksCont.addEventListener('click', function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
       const action = target.getAttribute('data-action');
-      if (action === 'toggle-edit-lo')      toggleEditLO(target.getAttribute('data-lo-id'));
-      else if (action === 'delete-lo')      deleteLearningOutcome(target.getAttribute('data-lo-id'));
-      else if (action === 'unassign-pc-from-lo') {
-        unassignPCFromLO(target.getAttribute('data-lo-id'), target.getAttribute('data-pc-id'));
-      }
+      if (action === 'toggle-edit-lo')             toggleEditLO(target.getAttribute('data-lo-id'));
+      else if (action === 'delete-lo')             deleteLearningOutcome(target.getAttribute('data-lo-id'));
+      else if (action === 'unassign-pc-from-lo')   unassignPCFromLO(target.getAttribute('data-lo-id'), target.getAttribute('data-pc-id'));
     });
-    loBlocksCont.addEventListener('blur', function (e) {
-      const target = e.target.closest('[data-action-blur]');
-      if (!target) return;
-      // saveLOStatement handled via toggleEditLO save path
-    }, true);
   }
 
-  // Module LO list
+  // ── Module LO list ──────────────────────────────────────────
   const moduleLoList = document.getElementById('moduleLoList');
   if (moduleLoList) {
     moduleLoList.addEventListener('change', function (e) {
@@ -309,22 +379,20 @@ export function setupEvents() {
     });
   }
 
-  // Modules container
+  // ── Modules container ───────────────────────────────────────
   const modulesCont = document.getElementById('modulesContainer');
   if (modulesCont) {
     modulesCont.addEventListener('click', function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
       const action = target.getAttribute('data-action');
-      if (action === 'rename-module')          renameModule(target.getAttribute('data-module-id'));
-      else if (action === 'delete-module')     deleteModule(target.getAttribute('data-module-id'));
-      else if (action === 'remove-lo-from-module') {
-        removeLoFromModule(target.getAttribute('data-module-id'), target.getAttribute('data-lo-id'));
-      }
+      if (action === 'rename-module')              renameModule(target.getAttribute('data-module-id'));
+      else if (action === 'delete-module')         deleteModule(target.getAttribute('data-module-id'));
+      else if (action === 'remove-lo-from-module') removeLoFromModule(target.getAttribute('data-module-id'), target.getAttribute('data-lo-id'));
     });
   }
 
-  // Custom sections container
+  // ── Custom sections container ───────────────────────────────
   const customSectCont = document.getElementById('customSectionsContainer');
   if (customSectCont) {
     customSectCont.addEventListener('click', function (e) {
@@ -345,7 +413,7 @@ export function setupEvents() {
     });
   }
 
-  // Skills Level container
+  // ── Skills Level container ──────────────────────────────────
   const skillsCont = document.getElementById('skillsLevelContainer');
   if (skillsCont) {
     skillsCont.addEventListener('click', function (e) {
@@ -386,21 +454,8 @@ export function setupEvents() {
     });
   }
 
-  // Additional Info static buttons (formatList / toggleEditHeading / clearSection)
+  // Additional Info static buttons
   _onStaticInfoButtons();
-
-  // ── Snapshot panel delegation ────────────────────────────────
-  const snapList = document.getElementById('snapshotList');
-  if (snapList) {
-    snapList.addEventListener('click', function (e) {
-      const btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      const action = btn.getAttribute('data-action');
-      const id     = btn.getAttribute('data-snap-id');
-      if (action === 'restore-snapshot') restoreSnapshot(id);
-      else if (action === 'delete-snapshot')  deleteSnapshot(id);
-    });
-  }
 }
 
 // ── Private helpers ───────────────────────────────────────────
@@ -410,21 +465,11 @@ function _on(id, event, handler) {
   if (el) el.addEventListener(event, handler);
 }
 
-function _defaultSnapName() {
-  const occ = (document.getElementById('occupationTitle')?.value || '').trim();
-  const now = new Date();
-  const time = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  return occ ? `${occ} — ${time}` : `Workshop checkpoint — ${time}`;
-}
-
 function _onRadioGroup(name, handler) {
-  document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
-    radio.addEventListener('change', handler);
-  });
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.addEventListener('change', handler));
 }
 
 function _onStaticInfoButtons() {
-  // Heading rename buttons and format buttons are in the static HTML
   document.querySelectorAll('[data-action="toggle-edit-heading"]').forEach(btn => {
     btn.addEventListener('click', function () {
       toggleEditHeading(this.getAttribute('data-heading-id'));

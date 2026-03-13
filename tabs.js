@@ -15,11 +15,9 @@ export function setupTabs() {
     tab.addEventListener('click', function () {
       const tabId = this.getAttribute('data-tab');
 
-      // clustering-tab is guarded by switchTab() which checks clusteringAllowed
-      if (tabId === 'clustering-tab') {
-        window.switchTab(tabId);
-        return;
-      }
+      // clustering-tab is guarded by switchTab() – do not wire it here directly
+      // (The HTML button for clustering tab should call window.switchTab)
+      if (tabId === 'clustering-tab') return;
 
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));

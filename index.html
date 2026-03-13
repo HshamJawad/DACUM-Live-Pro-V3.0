@@ -2308,102 +2308,6 @@
     image-rendering: pixelated;
     max-width: none;
 }
-/* ── Undo / Redo buttons ───────────────────────────────────── */
-#btnUndo:not([disabled]):hover, #btnRedo:not([disabled]):hover {
-    background: #667eea !important;
-    color: white !important;
-    border-color: #667eea !important;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(102,126,234,0.3);
-}
-#btnUndo[disabled], #btnRedo[disabled] {
-    opacity: 0.4;
-    cursor: not-allowed !important;
-}
-
-/* ── Snapshot Panel ────────────────────────────────────────── */
-#snapshotPanel {
-    background: #fff;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px 18px;
-    margin-bottom: 20px;
-}
-#snapshotPanel h3 {
-    margin: 0 0 12px 0;
-    font-size: 1em;
-    color: #374151;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.snap-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 9px 12px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    margin-bottom: 7px;
-    background: #f9fafb;
-    transition: background 0.15s;
-}
-.snap-item:hover { background: #f0f4ff; }
-.snap-meta { flex: 1; min-width: 0; }
-.snap-name {
-    display: block;
-    font-weight: 600;
-    font-size: 0.92em;
-    color: #1f2937;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.snap-date {
-    display: block;
-    font-size: 0.78em;
-    color: #9ca3af;
-    margin-top: 2px;
-}
-.snap-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.snap-btn {
-    border: none;
-    border-radius: 6px;
-    padding: 5px 11px;
-    font-size: 0.82em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-.snap-restore {
-    background: #667eea;
-    color: white;
-}
-.snap-restore:hover { background: #4f46e5; }
-.snap-delete {
-    background: #fee2e2;
-    color: #dc2626;
-}
-.snap-delete:hover { background: #fecaca; }
-.btn-save-snapshot {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 0.92em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-.btn-save-snapshot:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16,185,129,0.35);
-}
     </style>
 </head>
 <body>
@@ -2547,34 +2451,14 @@
         </div>
         
         <div class="tab-content" id="duties-tab">
-            <div style="margin-bottom: 15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div style="margin-bottom: 15px;">
                 <button data-action="clear-tab" data-tab-id="duties-tab" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em;">
                     🗑️ Clear This Tab
-                </button>
-                <button id="btnUndo" disabled
-                    title="Nothing to undo  (Ctrl+Z)"
-                    style="background:#f3f4f6; color:#374151; border:2px solid #d1d5db; border-radius:6px; padding:7px 18px; font-size:0.95em; font-weight:600; cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px;">
-                    ↩ Undo
-                </button>
-                <button id="btnRedo" disabled
-                    title="Nothing to redo  (Ctrl+Y)"
-                    style="background:#f3f4f6; color:#374151; border:2px solid #d1d5db; border-radius:6px; padding:7px 18px; font-size:0.95em; font-weight:600; cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px;">
-                    ↪ Redo
                 </button>
             </div>
             
             <h2>Duties and Tasks</h2>
             
-            <!-- Snapshot Panel -->
-            <div id="snapshotPanel">
-                <h3>📸 Workshop Snapshots
-                    <button class="btn-save-snapshot" id="btnSaveSnapshot">＋ Save Snapshot</button>
-                </h3>
-                <div id="snapshotList">
-                    <!-- Populated by renderSnapshotPanel() -->
-                </div>
-            </div>
-
             <!-- AI Generation Section -->
             <div style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center;">
                 <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.1em;">✨ AI-Powered DACUM Generation</h3>
