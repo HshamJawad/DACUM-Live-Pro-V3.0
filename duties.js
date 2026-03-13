@@ -80,21 +80,6 @@ export function syncTaskText(taskInputId, value) {
   }
 }
 
-/**
- * Walk every visible duty/task input in the DOM and flush values
- * into appState.dutiesData.  Call this before any structural mutation
- * (removeDuty, removeTask, clearDuty) and before saveSnapshot,
- * so state is always the source of truth.
- */
-export function syncAllFromDOM() {
-  document.querySelectorAll('input[data-duty-id]').forEach(inp => {
-    syncDutyTitle(inp.getAttribute('data-duty-id'), inp.value);
-  });
-  document.querySelectorAll('input[data-task-id]').forEach(inp => {
-    syncTaskText(inp.getAttribute('data-task-id'), inp.value);
-  });
-}
-
 // ── Structural mutations (pure state + re-render, NO history) ─
 
 export function addDuty() {
@@ -114,7 +99,6 @@ export function addDuty() {
 }
 
 export function removeDuty(dutyId) {
-  syncAllFromDOM();
   appState.dutiesData = (appState.dutiesData || []).filter(d => d.id !== dutyId);
   renderDutiesFromState();
 }
@@ -133,7 +117,6 @@ export function addTask(dutyId) {
 }
 
 export function removeTask(taskDivId) {
-  syncAllFromDOM();
   for (const duty of (appState.dutiesData || [])) {
     const idx = duty.tasks.findIndex(t => t.divId === taskDivId);
     if (idx !== -1) { duty.tasks.splice(idx, 1); break; }
@@ -143,7 +126,6 @@ export function removeTask(taskDivId) {
 
 export function clearDuty(dutyId) {
   if (!confirm('Are you sure you want to clear this duty and all its tasks?')) return;
-  syncAllFromDOM();
   const duty = (appState.dutiesData || []).find(d => d.id === dutyId);
   if (duty) { duty.title = ''; duty.tasks = []; }
   appState.taskCounts[dutyId] = 0;
