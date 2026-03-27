@@ -42,27 +42,30 @@ export function incrementUsage() {
   updateUsageBadge();
 }
 
+// FIX 1: New AI card (refine.js) is the single source of truth.
+// updateUsageBadge() is kept for API compatibility but no longer
+// renders the old badge DOM — the #usageBadge element is removed
+// from index.html in the new layout.
 export function updateUsageBadge() {
-  const status = checkUsageLimit();
+  // Guard: if old badge element still exists in DOM (legacy),
+  // keep it hidden to prevent the old UI from reappearing.
   const badge = document.getElementById('usageBadge');
-  const btn   = document.getElementById('aiGenerateBtn');
-  if (!badge || !btn) return;
+  if (badge) badge.style.display = 'none';
 
+  // Disable the generate button only when limit is reached.
+  const status = checkUsageLimit();
+  const btn    = document.getElementById('aiGenerateBtn');
+  if (!btn) return;
   if (status.remaining <= 0) {
-    badge.innerHTML = `❌ Daily limit reached (${DAILY_LIMIT}/${DAILY_LIMIT}) - Try again tomorrow`;
-    badge.className = 'usage-badge limit';
-    badge.style.display = 'inline-block';
-    btn.disabled = true;
-    btn.style.opacity = '0.5';
-    btn.style.cursor = 'not-allowed';
-  } else if (status.remaining <= 3) {
-    badge.innerHTML = `⚠️ ${status.remaining} generations remaining today`;
-    badge.className = 'usage-badge warning';
-    badge.style.display = 'inline-block';
+    btn.disabled     = true;
+    btn.style.opacity  = '0.5';
+    btn.style.cursor   = 'not-allowed';
+    btn.title          = 'Daily AI generation limit reached. Try again tomorrow.';
   } else {
-    badge.innerHTML = `✅ ${status.remaining}/${DAILY_LIMIT} generations remaining today`;
-    badge.className = 'usage-badge';
-    badge.style.display = 'inline-block';
+    btn.disabled     = false;
+    btn.style.opacity  = '';
+    btn.style.cursor   = '';
+    btn.title          = '';
   }
 }
 
