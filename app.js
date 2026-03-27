@@ -10,8 +10,7 @@ import { setupTabs }         from './tabs.js';
 import { setupEvents }       from './events.js';
 import { switchTab }         from './projects.js';
 import { addDuty, addTask }  from './duties.js';
-import { updateCollectionMode, updateWorkflowMode, updateDutyLevelSummary,
-         renderVerificationTab } from './tasks.js';
+import { updateCollectionMode, updateWorkflowMode, updateDutyLevelSummary } from './tasks.js';
 import { lwCheckAndShowSection } from './workshop.js';
 import { setBaseline }       from './history.js';
 import { renderSnapshotPanel } from './workshop_snapshots.js';
@@ -71,13 +70,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // Check for unsaved work from a previous crashed session
   checkCrashRecovery();
 
-  // Initialize Task Verification controls.
-  // FIX: Call mode updaters WITHOUT their internal render trigger, then issue
-  // ONE debounced render via renderVerificationTab() so the two consecutive
-  // calls during init never produce a double-render / "No Duties" flash.
+  // Initialize Task Verification controls
   updateCollectionMode();
   updateWorkflowMode();
-  renderVerificationTab();  // single authoritative render after both modes are set
 
   // Check Live Workshop section visibility
   const urlParams = new URLSearchParams(window.location.search);
