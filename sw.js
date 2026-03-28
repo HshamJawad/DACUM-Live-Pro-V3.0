@@ -38,15 +38,15 @@ const PRECACHE_URLS = [
   BASE + 'icons/icon-512.png',
   BASE + 'dacum-fixes.css',
   BASE + 'dacum-fixes.js',
-  BASE + 'dacum-mobile.js',
   BASE + 'tv-refactor.css',
   BASE + 'tv-refactor.js',
-  BASE + 'refine.js',
-  BASE + 'error-handler.js',
 ];
 
 // ── Install ───────────────────────────────────────────────────
 self.addEventListener('install', event => {
+  // Force immediate activation — do NOT wait for old SW to die
+  self.skipWaiting();
+
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
       Promise.allSettled(
@@ -56,18 +56,24 @@ self.addEventListener('install', event => {
           )
         )
       )
-    ).then(() => self.skipWaiting())
+    )
   );
 });
 
 // ── Activate ──────────────────────────────────────────────────
 self.addEventListener('activate', event => {
+  console.log('[SW] Activated and controlling page');
+
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+    // Claim clients first so the page is controlled immediately,
+    // then clean up stale caches.
+    self.clients.claim().then(() =>
+      caches.keys().then(keys =>
+        Promise.all(
+          keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        )
       )
-    ).then(() => self.clients.claim())
+    )
   );
 });
 
