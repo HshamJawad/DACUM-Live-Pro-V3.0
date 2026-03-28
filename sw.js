@@ -1,11 +1,11 @@
 // ============================================================
 // sw.js — DACUM Live Pro Service Worker
-// Deployed at: /DACUM-Live-Pro-V3.0/sw.js
-// Scope:       /DACUM-Live-Pro-V3.0/
+// Deployed at: /DACUM-Live-Pro-V3.1/sw.js
+// Scope:       /DACUM-Live-Pro-V3.1/
 // ============================================================
 
 const CACHE_NAME   = 'dacum-live-pro-v3';
-const BASE         = '/DACUM-Live-Pro-V3.0/';
+const BASE         = '/DACUM-Live-Pro-V3.1/';
 const OFFLINE_PAGE = BASE + 'index.html';
 
 const PRECACHE_URLS = [
