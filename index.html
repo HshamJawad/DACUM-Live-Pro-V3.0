@@ -2,53 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DACUM Live Pro</title>
-
-    <!-- PWA: Web App Manifest -->
-    <link rel="manifest" href="manifest.json">
-
-    <!-- PWA: iOS / Safari -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="DACUM Pro">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-    <!-- PWA: Android / Chrome -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#667eea">
-    <meta name="application-name" content="DACUM Live Pro">
-
-    <!-- General -->
-    <meta name="description" content="Professional DACUM Analysis &amp; Competency-Based Curriculum Design Tool">
-    <meta name="format-detection" content="telephone=no">
-
-    <!-- Register Service Worker -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker
-            .register('/DACUM-Live-Pro-V3.0/sw.js', { scope: '/DACUM-Live-Pro-V3.0/' })
-            .then(function (reg) {
-              console.log('[PWA] SW registered. Scope:', reg.scope);
-            })
-            .catch(function (err) {
-              console.warn('[PWA] SW registration failed:', err);
-            });
-        });
-      }
-    </script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
     <link rel="stylesheet" href="dacum-styles.css">
-    <link rel="stylesheet" href="dacum-responsive.css">
-    <style>
-      @keyframes refine-fade-in {
-        from { opacity:0; transform:translateY(-6px); }
-        to   { opacity:1; transform:translateY(0); }
-      }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -183,31 +141,10 @@
                 <button class="btn-ai-generate" id="aiGenerateBtn"  style="background: white; color: #667eea; padding: 12px 30px; font-size: 1.05em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                     🤖 Generate AI Draft
                 </button>
-                <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 0.85em;">💡 Make sure to fill Occupation Title and Job Title in Chart Info tab first</p>
-            </div>
-
-            <!-- Refine Results section (hidden until AI generation runs) -->
-            <div id="refineResultsSection" style="display:none; margin: -10px 0 22px 0;">
-                <div style="display:flex; align-items:center; gap:14px; padding:13px 18px;
-                            background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px;">
-                    <span style="font-size:1.1em; flex-shrink:0;">&#x2728;</span>
-                    <div style="flex:1; min-width:0;">
-                        <p style="margin:0 0 2px; font-size:0.86em; font-weight:700; color:#374151;">Refine AI Results</p>
-                        <p style="margin:0; font-size:0.78em; color:#6b7280; line-height:1.4;">
-                            Clean duplicates, normalize wording, remove result clauses &amp; fragments.
-                            <strong style="color:#4b5563;">Reversible with Ctrl+Z.</strong>
-                        </p>
-                    </div>
-                    <button id="btnRefineResults"
-                            style="flex-shrink:0; padding:8px 18px; background:#ffffff; color:#374151;
-                                   border:1.5px solid #d1d5db; border-radius:8px; font-size:0.84em;
-                                   font-weight:600; cursor:pointer; white-space:nowrap;
-                                   transition:background 0.15s, border-color 0.15s;"
-                            onmouseover="this.style.background='#f0f4ff';this.style.borderColor='#a5b4fc';"
-                            onmouseout="this.style.background='#fff';this.style.borderColor='#d1d5db';">
-                        &#x1F9F9; Refine Results
-                    </button>
+                <div id="usageBadge" class="usage-badge" style="display: none;">
+                    <!-- Usage info will be shown here -->
                 </div>
+                <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 0.85em;">💡 Make sure to fill Occupation Title and Job Title in Chart Info tab first</p>
             </div>
 
             <!-- View toggle — sits between AI section and the duties area -->
@@ -1069,21 +1006,10 @@
 
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="qrcode.min.js"></script>
     <script type="module" src="app.js"></script>
-    <script src="dacum-mobile.js"></script>
 
     <!-- ── Fixed Top Toolbar ──────────────────────────────────── -->
     <div id="dacumTopToolbar">
       <div class="dtb-left">
-        <button id="dpsHamburger" class="dtb-hamburger" title="Toggle sidebar" aria-label="Toggle sidebar"
-                style="display:none; align-items:center; justify-content:center;
-                       background:#fff; border:1.5px solid #e2e2e4; border-radius:99px;
-                       padding:7px 11px; cursor:pointer; flex-shrink:0;">
-          <svg viewBox="0 0 18 18" width="18" height="18" fill="none">
-            <rect x="2" y="4" width="14" height="1.8" rx="0.9" fill="#444447"/>
-            <rect x="2" y="8.1" width="14" height="1.8" rx="0.9" fill="#444447"/>
-            <rect x="2" y="12.2" width="14" height="1.8" rx="0.9" fill="#444447"/>
-          </svg>
-        </button>
         <button class="dtb-btn dtb-snapshot" id="btnSaveSnapshot" title="Save Snapshot">
           <svg class="dtb-icon" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" fill="#f59e0b"/><circle cx="9" cy="9" r="3" fill="#fff"/></svg>
           <span>Snapshot</span>
