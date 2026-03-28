@@ -1,11 +1,11 @@
 // ============================================================
 // sw.js — DACUM Live Pro Service Worker
-// Deployed at: /DACUM-Live-Pro-V3.1/sw.js
-// Scope:       /DACUM-Live-Pro-V3.1/
+// Deployed at: /DACUM-Live-Pro-V3.0/sw.js
+// Scope:       /DACUM-Live-Pro-V3.0/
 // ============================================================
 
 const CACHE_NAME   = 'dacum-live-pro-v3';
-const BASE         = '/DACUM-Live-Pro-V3.1/';
+const BASE         = '/DACUM-Live-Pro-V3.0/';
 const OFFLINE_PAGE = BASE + 'index.html';
 
 const PRECACHE_URLS = [
@@ -34,19 +34,19 @@ const PRECACHE_URLS = [
   BASE + 'autosave.js',
   BASE + 'qrcode.min.js',
   BASE + 'manifest.json',
-  BASE + 'icon-192.png',
-  BASE + 'icon-512.png',
+  BASE + 'icons/icon-192.png',
+  BASE + 'icons/icon-512.png',
   BASE + 'dacum-fixes.css',
   BASE + 'dacum-fixes.js',
+  BASE + 'dacum-mobile.js',
   BASE + 'tv-refactor.css',
   BASE + 'tv-refactor.js',
+  BASE + 'refine.js',
+  BASE + 'error-handler.js',
 ];
 
 // ── Install ───────────────────────────────────────────────────
 self.addEventListener('install', event => {
-  // Force immediate activation — do NOT wait for old SW to die
-  self.skipWaiting();
-
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
       Promise.allSettled(
@@ -56,24 +56,18 @@ self.addEventListener('install', event => {
           )
         )
       )
-    )
+    ).then(() => self.skipWaiting())
   );
 });
 
 // ── Activate ──────────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  console.log('[SW] Activated and controlling page');
-
   event.waitUntil(
-    // Claim clients first so the page is controlled immediately,
-    // then clean up stale caches.
-    self.clients.claim().then(() =>
-      caches.keys().then(keys =>
-        Promise.all(
-          keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-        )
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
       )
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
