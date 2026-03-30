@@ -38,8 +38,6 @@ const PRECACHE_URLS = [
   BASE + 'icon-512.png',
   BASE + 'dacum-fixes.css',
   BASE + 'dacum-fixes.js',
-  BASE + 'tv-refactor.css',
-  BASE + 'tv-refactor.js',
 ];
 
 // ── Install ───────────────────────────────────────────────────
